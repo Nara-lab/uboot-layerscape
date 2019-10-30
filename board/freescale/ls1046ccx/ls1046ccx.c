@@ -20,7 +20,6 @@
 #include <fsl_csu.h>
 #include <fsl_esdhc.h>
 #include <power/mc34vr500_pmic.h>
-#include "../ls1046ardb/cpld.h"
 #include <fsl_sec.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -35,33 +34,6 @@ int board_early_init_f(void)
 #ifndef CONFIG_SPL_BUILD
 int checkboard(void)
 {
-	static const char *freq[2] = {"100.00MHZ", "156.25MHZ"};
-	u8 cfg_rcw_src1, cfg_rcw_src2;
-	u16 cfg_rcw_src;
-	u8 sd1refclk_sel;
-
-	puts("Board: LS1046ARDB, boot from ");
-
-	cfg_rcw_src1 = CPLD_READ(cfg_rcw_src1);
-	cfg_rcw_src2 = CPLD_READ(cfg_rcw_src2);
-	cpld_rev_bit(&cfg_rcw_src1);
-	cfg_rcw_src = cfg_rcw_src1;
-	cfg_rcw_src = (cfg_rcw_src << 1) | cfg_rcw_src2;
-
-	if (cfg_rcw_src == 0x44)
-		printf("QSPI vBank %d\n", CPLD_READ(vbank));
-	else if (cfg_rcw_src == 0x40)
-		puts("SD\n");
-	else
-		puts("Invalid setting of SW5\n");
-
-	printf("CPLD:  V%x.%x\nPCBA:  V%x.0\n", CPLD_READ(cpld_ver),
-	       CPLD_READ(cpld_ver_sub), CPLD_READ(pcba_ver));
-
-	puts("SERDES Reference Clocks:\n");
-	sd1refclk_sel = CPLD_READ(sd1refclk_sel);
-	printf("SD1_CLK1 = %s, SD1_CLK2 = %s\n", freq[sd1refclk_sel], freq[0]);
-
 	return 0;
 }
 
@@ -99,11 +71,6 @@ int board_init(void)
 
 int board_setup_core_volt(u32 vdd)
 {
-	bool en_0v9;
-
-	en_0v9 = (vdd == 900) ? true : false;
-	cpld_select_core_volt(en_0v9);
-
 	return 0;
 }
 
