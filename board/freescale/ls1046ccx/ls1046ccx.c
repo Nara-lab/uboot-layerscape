@@ -39,7 +39,6 @@ int checkboard(void)
 
 int board_init(void)
 {
-	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
 
 #ifdef CONFIG_SECURE_BOOT
 	/*
@@ -63,9 +62,6 @@ int board_init(void)
 	ppa_init();
 #endif
 
-	/* invert AQR105 IRQ pins polarity */
-	out_be32(&scfg->intpcr, AQR105_IRQ_MASK);
-
 	return 0;
 }
 
@@ -74,26 +70,8 @@ int board_setup_core_volt(u32 vdd)
 	return 0;
 }
 
-int get_serdes_volt(void)
-{
-	return mc34vr500_get_sw_volt(SW4);
-}
-
-int set_serdes_volt(int svdd)
-{
-	return mc34vr500_set_sw_volt(SW4, svdd);
-}
-
 int power_init_board(void)
 {
-	int ret;
-
-	ret = power_mc34vr500_init(0);
-	if (ret)
-		return ret;
-
-	setup_chip_volt();
-
 	return 0;
 }
 
@@ -132,8 +110,6 @@ int ft_board_setup(void *blob, bd_t *bd)
 	/* fixup DT for the two DDR banks */
 	base[0] = gd->bd->bi_dram[0].start;
 	size[0] = gd->bd->bi_dram[0].size;
-	base[1] = gd->bd->bi_dram[1].start;
-	size[1] = gd->bd->bi_dram[1].size;
 
 	fdt_fixup_memory_banks(blob, base, size, 2);
 	ft_cpu_setup(blob, bd);

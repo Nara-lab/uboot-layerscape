@@ -364,6 +364,7 @@ int fm_init_common(int index, struct ccsr_fman *reg)
 
 		addr = malloc(CONFIG_SYS_QE_FMAN_FW_LENGTH);
 
+#ifdef CONFIG_DM_NAND
 		rc = nand_read(get_nand_dev_by_index(0),
 			       (loff_t)CONFIG_SYS_FMAN_FW_ADDR,
 			       &fw_length, (u_char *)addr);
@@ -371,6 +372,9 @@ int fm_init_common(int index, struct ccsr_fman *reg)
 			printf("NAND read of FMAN firmware at offset 0x%x failed %d\n",
 			       CONFIG_SYS_FMAN_FW_ADDR, rc);
 		}
+#else
+		printf("No NAND support, can't read of FMAN firmware\n");
+#endif
 	} else if (src == BOOT_SOURCE_QSPI_NOR) {
 		struct spi_flash *ucode_flash;
 
