@@ -103,8 +103,8 @@
 #ifndef SPL_NO_QSPI
 #ifdef CONFIG_FSL_QSPI
 #define CONFIG_SPI_FLASH_SPANSION
-#define FSL_QSPI_FLASH_SIZE		(1 << 26)
-#define FSL_QSPI_FLASH_NUM		2
+#define FSL_QSPI_FLASH_SIZE		SZ_8M
+#define FSL_QSPI_FLASH_NUM		1
 #endif
 #endif
 

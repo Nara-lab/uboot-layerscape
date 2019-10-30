@@ -104,14 +104,17 @@ int misc_init_r(void)
 
 int ft_board_setup(void *blob, bd_t *bd)
 {
+	int i;
 	u64 base[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
 
 	/* fixup DT for the two DDR banks */
-	base[0] = gd->bd->bi_dram[0].start;
-	size[0] = gd->bd->bi_dram[0].size;
+	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
+		base[i] = gd->bd->bi_dram[i].start;
+		size[i] = gd->bd->bi_dram[i].size;
+	}
 
-	fdt_fixup_memory_banks(blob, base, size, 2);
+	fdt_fixup_memory_banks(blob, base, size, CONFIG_NR_DRAM_BANKS);
 	ft_cpu_setup(blob, bd);
 
 #ifdef CONFIG_SYS_DPAA_FMAN
