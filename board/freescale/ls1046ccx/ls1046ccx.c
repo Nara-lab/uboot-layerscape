@@ -77,21 +77,10 @@ int power_init_board(void)
 
 void config_board_mux(void)
 {
-#ifdef CONFIG_HAS_FSL_XHCI_USB
 	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
-	u32 usb_pwrfault;
 
-	/* USB3 is not used, configure mux to IIC4_SCL/IIC4_SDA */
-	out_be32(&scfg->rcwpmuxcr0, 0x3300);
-	out_be32(&scfg->usbdrvvbus_selcr, SCFG_USBDRVVBUS_SELCR_USB1);
-	usb_pwrfault = (SCFG_USBPWRFAULT_DEDICATED <<
-			SCFG_USBPWRFAULT_USB3_SHIFT) |
-			(SCFG_USBPWRFAULT_DEDICATED <<
-			SCFG_USBPWRFAULT_USB2_SHIFT) |
-			(SCFG_USBPWRFAULT_SHARED <<
-			SCFG_USBPWRFAULT_USB1_SHIFT);
-	out_be32(&scfg->usbpwrfault_selcr, usb_pwrfault);
-#endif
+	/* enable IIC3 */
+	out_be32(&scfg->rcwpmuxcr0, 0x0000);
 }
 
 #ifdef CONFIG_MISC_INIT_R
