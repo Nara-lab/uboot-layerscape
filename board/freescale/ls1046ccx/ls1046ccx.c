@@ -37,6 +37,48 @@ int checkboard(void)
 	return 0;
 }
 
+int pld_enable_reset_req(void)
+{
+	int err;
+
+	/* enable the reset_req driven reset by programming
+	 * the GPIO Expander / PLD on IIC3 (Semtech SX1503) */
+
+	err = i2c_set_bus_num(2);
+	if (err < 0) {
+		printf("Failed to set I2C Bus to IIC3.\n");
+		return err;
+	}
+
+	i2c_reg_write(0x20, 0x05, 0xff);
+	if (i2c_reg_read(0x20, 0x05) != 0xff) {
+		printf("Failed to enable pull-ups on bank a.\n");
+		return err;
+	}
+
+	i2c_reg_write(0x20, 0x23, 0x0a);
+	if (i2c_reg_read(0x20, 0x23) != 0x0a) {
+		printf("Failed to set PLD mode on bank a.\n");
+		return err;
+	}
+
+	i2c_reg_write(0x20, 0x21, 0x01);
+	if (i2c_reg_read(0x20, 0x21) != 0x01) {
+		printf("Failed to enable PLD on bank a.\n");
+		return err;
+	}
+
+	err = i2c_set_bus_num(0);
+	if (err < 0) {
+		printf("Failed to set I2C Bus to IIC1.\n");
+		return err;
+	}
+
+	printf("Reset PLD: live\n");
+
+	return 0;
+}
+
 int board_init(void)
 {
 
@@ -87,9 +129,12 @@ void config_board_mux(void)
 int misc_init_r(void)
 {
 	config_board_mux();
+
+	pld_enable_reset_req();
 	return 0;
 }
 #endif
+
 
 int ft_board_setup(void *blob, bd_t *bd)
 {
