@@ -68,6 +68,18 @@ int pld_enable_reset_req(void)
 		return err;
 	}
 
+	i2c_reg_write(0x20, 0x02, 0x00);
+	if (i2c_reg_read(0x20, 0x02) != 0x00) {
+		printf("Failed to set direction on bank b.\n");
+		return err;
+	}
+
+	i2c_reg_write(0x20, 0x00, 0xff);
+	if (i2c_reg_read(0x20, 0x00) != 0xff) {
+		printf("Failed to release resets on bank b.\n");
+		return err;
+	}
+
 	err = i2c_set_bus_num(0);
 	if (err < 0) {
 		printf("Failed to set I2C Bus to IIC1.\n");

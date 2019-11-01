@@ -5,5 +5,5 @@
 obj-y += ../ls1046ardb/ddr.o
 obj-y += ls1046ccx.o
 ifndef CONFIG_SPL_BUILD
-obj-$(CONFIG_NET) += ../ls1046ardb/eth.o
+obj-$(CONFIG_NET) += eth.o
 endif

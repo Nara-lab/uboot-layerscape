@@ -10,6 +10,7 @@
 #include "ls1046a_common.h"
 
 /* Move up so can fit bootloader in 8MB FLASH */
+#undef CONFIG_SYS_FMAN_FW_ADDR
 #define CONFIG_SYS_FMAN_FW_ADDR		0x400000
 
 #define CONFIG_SYS_CLK_FREQ		100000000
@@ -51,13 +52,11 @@
 
 #ifdef CONFIG_SYS_DPAA_FMAN
 #define CONFIG_FMAN_ENET
-#define RGMII_PHY1_ADDR			0x1
-#define RGMII_PHY2_ADDR			0x2
+#define RGMII_PHY1_ADDR			0x0
+#define RGMII_PHY2_ADDR			0x3
 
-#define SGMII_PHY1_ADDR			0x3
-#define SGMII_PHY2_ADDR			0x4
-
-#define FM1_10GEC1_PHY_ADDR		0x0
+#define SGMII_PHY1_ADDR			0xc
+#define SGMII_PHY2_ADDR			0xf
 
 #define FDT_SEQ_MACADDR_FROM_ENV
 
