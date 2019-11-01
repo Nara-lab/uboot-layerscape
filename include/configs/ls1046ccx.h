@@ -9,6 +9,9 @@
 
 #include "ls1046a_common.h"
 
+/* Move up so can fit bootloader in 8MB FLASH */
+#define CONFIG_SYS_FMAN_FW_ADDR		0x400000
+
 #define CONFIG_SYS_CLK_FREQ		100000000
 #define CONFIG_DDR_CLK_FREQ		100000000
 
