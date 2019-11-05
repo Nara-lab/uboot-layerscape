@@ -68,8 +68,8 @@
 /* QSPI device */
 #ifndef SPL_NO_QSPI
 #ifdef CONFIG_FSL_QSPI
-#define CONFIG_SPI_FLASH_SPANSION
-#define FSL_QSPI_FLASH_SIZE		SZ_8M
+#define CONFIG_SPI_FLASH_ISSI
+#define FSL_QSPI_FLASH_SIZE		SZ_16M
 #define FSL_QSPI_FLASH_NUM		1
 #endif
 #endif

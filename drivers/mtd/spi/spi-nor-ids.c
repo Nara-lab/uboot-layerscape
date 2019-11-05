@@ -188,8 +188,6 @@ const struct flash_info spi_nor_ids[] = {
 	{ INFO("s25sl016a",  0x010214,      0,  64 * 1024,  32, 0) },
 	{ INFO("s25sl032a",  0x010215,      0,  64 * 1024,  64, 0) },
 	{ INFO("s25sl064a",  0x010216,      0,  64 * 1024, 128, 0) },
-	{ INFO("s25fl064s_64k", 0x010217, 0x4d01, 64 * 1024, 128, SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ | USE_CLSR) },
-	{ INFO("s25fl064s_256k", 0x010217, 0x4d00, 256 * 1024, 32, SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ | USE_CLSR) },
 	{ INFO("s25fl116k",  0x014015,      0,  64 * 1024,  32, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
 	{ INFO("s25fl164k",  0x014017,      0,  64 * 1024, 128, SECT_4K) },
 	{ INFO("s25fl208k",  0x014014,      0,  64 * 1024,  16, SECT_4K | SPI_NOR_DUAL_READ) },
