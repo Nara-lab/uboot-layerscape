@@ -74,23 +74,9 @@
 #endif
 #endif
 
-#ifndef SPL_NO_MISC
+#define SPL_NO_MISC
 #undef CONFIG_BOOTCOMMAND
-#ifdef CONFIG_TFABOOT
-#define QSPI_NOR_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd; "	\
-			   "env exists secureboot && esbc_halt;;"
-#define SD_BOOTCOMMAND "run distro_bootcmd;run sd_bootcmd; "	\
-			   "env exists secureboot && esbc_halt;"
-#else
-#if defined(CONFIG_QSPI_BOOT)
-#define CONFIG_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd; "	\
-			   "env exists secureboot && esbc_halt;;"
-#elif defined(CONFIG_SD_BOOT)
-#define CONFIG_BOOTCOMMAND "run distro_bootcmd;run sd_bootcmd; "	\
-			   "env exists secureboot && esbc_halt;"
-#endif
-#endif
-#endif
+#define CONFIG_BOOTCOMMAND "echo No Boot Command"
 
 #include <asm/fsl_secure_boot.h>
 
