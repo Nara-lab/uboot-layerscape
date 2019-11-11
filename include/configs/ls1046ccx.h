@@ -76,8 +76,8 @@
 
 #define SPL_NO_MISC
 #undef CONFIG_BOOTCOMMAND
-#define QSPI_NOR_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd"
-#define SD_BOOTCOMMAND "run distro_bootcmd; run sd_bootcmd;"
+#define QSPI_NOR_BOOTCOMMAND "run qspi_bootcmd"
+#define SD_BOOTCOMMAND "run sd_bootcmd;"
 
 #include <asm/fsl_secure_boot.h>
 
