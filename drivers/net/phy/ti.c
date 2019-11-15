@@ -137,16 +137,16 @@ int phy_read_mmd_indirect(struct phy_device *phydev, int prtad,
 	int value = -1;
 
 	/* Write the desired MMD Devad */
-	phy_write(phydev, addr, MII_MMD_CTRL, devad);
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MMD_CTRL, devad);
 
 	/* Write the desired MMD register address */
-	phy_write(phydev, addr, MII_MMD_DATA, prtad);
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MMD_DATA, prtad);
 
 	/* Select the Function : DATA with no post increment */
-	phy_write(phydev, addr, MII_MMD_CTRL, (devad | MII_MMD_CTRL_NOINCR));
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MMD_CTRL, (devad | MII_MMD_CTRL_NOINCR));
 
 	/* Read the content of the MMD's selected register */
-	value = phy_read(phydev, addr, MII_MMD_DATA);
+	value = phy_read(phydev, MDIO_DEVAD_NONE, MII_MMD_DATA);
 	return value;
 }
 
@@ -170,16 +170,16 @@ void phy_write_mmd_indirect(struct phy_device *phydev, int prtad,
 			    int devad, int addr, u32 data)
 {
 	/* Write the desired MMD Devad */
-	phy_write(phydev, addr, MII_MMD_CTRL, devad);
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MMD_CTRL, devad);
 
 	/* Write the desired MMD register address */
-	phy_write(phydev, addr, MII_MMD_DATA, prtad);
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MMD_DATA, prtad);
 
 	/* Select the Function : DATA with no post increment */
-	phy_write(phydev, addr, MII_MMD_CTRL, (devad | MII_MMD_CTRL_NOINCR));
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MMD_CTRL, (devad | MII_MMD_CTRL_NOINCR));
 
 	/* Write the data into MMD's selected register */
-	phy_write(phydev, addr, MII_MMD_DATA, data);
+	phy_write(phydev, MDIO_DEVAD_NONE, MII_MMD_DATA, data);
 }
 
 static int dp83867_config_port_mirroring(struct phy_device *phydev)
@@ -306,16 +306,18 @@ static int dp83867_config(struct phy_device *phydev)
 	phy_write(phydev, MDIO_DEVAD_NONE, DP83867_CTRL,
 		  val | DP83867_SW_RESTART);
 
-	/* Mode 1 or 2 workaround */
-	if (dp83867->rxctrl_strap_quirk) {
-		val = phy_read_mmd_indirect(phydev, DP83867_CFG4,
-					    DP83867_DEVADDR, phydev->addr);
-		val &= ~BIT(7);
-		phy_write_mmd_indirect(phydev, DP83867_CFG4,
-				       DP83867_DEVADDR, phydev->addr, val);
-	}
+	val = phy_read_mmd_indirect(phydev, DP83867_CFG4,
+				    DP83867_DEVADDR, phydev->addr);
+	printf("DP83867-%x: Fixing Strapping 0x%x\n", phydev->addr, val);
+	val &= ~BIT(7);
+	phy_write_mmd_indirect(phydev, DP83867_CFG4,
+			       DP83867_DEVADDR, phydev->addr, val);
+	val = phy_read_mmd_indirect(phydev, DP83867_CFG4,
+				    DP83867_DEVADDR, phydev->addr);
+	printf("DP83867-%x: Fixed Strapping 0x%x\n", phydev->addr, val);
 
 	if (phy_interface_is_rgmii(phydev)) {
+		printf("DP83867-%x: RGMII\n", phydev->addr);
 		ret = phy_write(phydev, MDIO_DEVAD_NONE, MII_DP83867_PHYCTRL,
 			(DP83867_MDI_CROSSOVER_AUTO << DP83867_MDI_CROSSOVER) |
 			(dp83867->fifo_depth << DP83867_PHYCR_FIFO_DEPTH_SHIFT));
@@ -342,6 +344,7 @@ static int dp83867_config(struct phy_device *phydev)
 		}
 
 	} else if (phy_interface_is_sgmii(phydev)) {
+		printf("DP83867-%x: SGMII\n", phydev->addr);
 		phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR,
 			  (BMCR_ANENABLE | BMCR_FULLDPLX | BMCR_SPEED1000));
 
@@ -374,8 +377,8 @@ static int dp83867_config(struct phy_device *phydev)
 			val |= (DP83867_RGMII_TX_CLK_DELAY_EN |
 				DP83867_RGMII_RX_CLK_DELAY_EN);
 
-		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_TXID)
-			val |= DP83867_RGMII_TX_CLK_DELAY_EN;
+		printf("DP83867-%x: Enabling TX Delay\n", phydev->addr);
+		val |= DP83867_RGMII_TX_CLK_DELAY_EN;
 
 		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID)
 			val |= DP83867_RGMII_RX_CLK_DELAY_EN;
@@ -384,7 +387,7 @@ static int dp83867_config(struct phy_device *phydev)
 				       DP83867_DEVADDR, phydev->addr, val);
 
 		delay = (dp83867->rx_id_delay |
-			 (dp83867->tx_id_delay << DP83867_RGMII_TX_CLK_DELAY_SHIFT));
+			 (0x80 << DP83867_RGMII_TX_CLK_DELAY_SHIFT));
 
 		phy_write_mmd_indirect(phydev, DP83867_RGMIIDCTL,
 				       DP83867_DEVADDR, phydev->addr, delay);

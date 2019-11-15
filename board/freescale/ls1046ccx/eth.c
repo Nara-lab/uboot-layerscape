@@ -50,7 +50,6 @@ int board_eth_init(bd_t *bis)
 	}
 
 	dev = miiphy_get_dev_by_name(DEFAULT_FM_MDIO_NAME);
-
 	fm_info_set_mdio(FM1_DTSEC3, dev);
 	fm_info_set_mdio(FM1_DTSEC4, dev);
 	fm_info_set_mdio(FM1_DTSEC5, dev);
