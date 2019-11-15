@@ -9,12 +9,12 @@
 
 #include "ls1046a_common.h"
 
-/* Move up so can fit bootloader in 8MB FLASH */
-#undef CONFIG_SYS_FMAN_FW_ADDR
-#define CONFIG_SYS_FMAN_FW_ADDR		0x400000
-
 #define CONFIG_SYS_CLK_FREQ		100000000
 #define CONFIG_DDR_CLK_FREQ		100000000
+
+/* Move up so can fit bootloader in 8MB FLASH */
+#undef CONFIG_SYS_FMAN_FW_ADDR
+#define CONFIG_SYS_FMAN_FW_ADDR                0x400000
 
 #define CONFIG_LAYERSCAPE_NS_ACCESS
 
@@ -25,10 +25,6 @@
 #define CONFIG_DDR_SPD
 #define SPD_EEPROM_ADDRESS		0x51
 #define CONFIG_SYS_SPD_BUS_NUM		0
-
-#define CONFIG_DDR_ECC
-#define CONFIG_ECC_INIT_VIA_DDRCONTROLLER
-#define CONFIG_MEM_INIT_VALUE           0xdeadbeef
 
 /*
  * Environment
@@ -57,6 +53,9 @@
 
 #define SGMII_PHY1_ADDR			0xc
 #define SGMII_PHY2_ADDR			0xf
+
+#define SGMII_PHY3_ADDR			0x0
+#define SGMII_PHY4_ADDR			0x1
 
 #define FDT_SEQ_MACADDR_FROM_ENV
 

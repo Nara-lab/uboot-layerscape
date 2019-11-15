@@ -41,6 +41,10 @@ int board_eth_init(bd_t *bis)
 	fm_info_set_phy_address(FM1_DTSEC5, SGMII_PHY1_ADDR);
 	fm_info_set_phy_address(FM1_DTSEC6, SGMII_PHY2_ADDR);
 
+	/* Set the two pluggin SGMII PHY addresses */
+	fm_info_set_phy_address(FM1_DTSEC9, SGMII_PHY3_ADDR);
+	fm_info_set_phy_address(FM1_DTSEC10, SGMII_PHY4_ADDR);
+
 	switch (srds_s1) {
 	case 0x3333:
 		break;
@@ -54,6 +58,10 @@ int board_eth_init(bd_t *bis)
 	fm_info_set_mdio(FM1_DTSEC4, dev);
 	fm_info_set_mdio(FM1_DTSEC5, dev);
 	fm_info_set_mdio(FM1_DTSEC6, dev);
+
+	dev = miiphy_get_dev_by_name(DEFAULT_FM_TGEC_MDIO_NAME);
+	fm_info_set_mdio(FM1_DTSEC9, dev);
+	fm_info_set_mdio(FM1_DTSEC10, dev);
 
 	cpu_eth_init(bis);
 #endif
