@@ -119,6 +119,9 @@ config SANDBOX
 	imply VIRTIO_NET
 	imply DM_SOUND
 	imply PCH
+	imply PHYLIB
+	imply DM_MDIO
+	imply DM_MDIO_MUX
 
 config SH
 	bool "SuperH architecture"

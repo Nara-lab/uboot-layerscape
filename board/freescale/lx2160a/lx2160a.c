@@ -76,7 +76,15 @@ int select_i2c_ch_pca9547(u8 ch)
 {
 	int ret;
 
+#ifndef CONFIG_DM_I2C
 	ret = i2c_write(I2C_MUX_PCA_ADDR_PRI, 0, 1, &ch, 1);
+#else
+	struct udevice *dev;
+
+	ret = i2c_get_chip_for_busnum(0, I2C_MUX_PCA_ADDR_PRI, 1, &dev);
+	if (!ret)
+		ret = dm_i2c_write(dev, 0, &ch, 1);
+#endif
 	if (ret) {
 		puts("PCA: failed to select proper channel\n");
 		return ret;
@@ -88,8 +96,15 @@ int select_i2c_ch_pca9547(u8 ch)
 int select_i2c_ch_pca9547_sec(u8 ch)
 {
 	int ret;
-
+#ifndef CONFIG_DM_I2C
 	ret = i2c_write(I2C_MUX_PCA_ADDR_SEC, 0, 1, &ch, 1);
+#else
+	struct udevice *dev;
+
+	ret = i2c_get_chip_for_busnum(0, I2C_MUX_PCA_ADDR_SEC, 1, &dev);
+	if (!ret)
+		ret = dm_i2c_write(dev, 0, &ch, 1);
+#endif
 	if (ret) {
 		puts("PCA: failed to select proper channel\n");
 		return ret;
@@ -357,7 +372,7 @@ int checkboard(void)
 
 	puts("SERDES1 Reference: Clock1 = 161.13MHz Clock2 = 161.13MHz\n");
 	puts("SERDES2 Reference: Clock1 = 100MHz Clock2 = 100MHz\n");
-	puts("SERDES3 Reference: Clock1 = 100MHz Clock2 = 100Hz\n");
+	puts("SERDES3 Reference: Clock1 = 100MHz Clock2 = 100MHz\n");
 #endif
 	return 0;
 }
@@ -481,6 +496,26 @@ int config_board_mux(void)
 		reg11 = SET_CFG_MUX3_SDHC1_SPI(reg11, 0x00);
 		QIXIS_WRITE(brdcfg[11], reg11);
 	}
+
+	return 0;
+}
+#elif defined(CONFIG_TARGET_LX2160ARDB)
+int config_board_mux(void)
+{
+	u8 brdcfg;
+
+	brdcfg = QIXIS_READ(brdcfg[4]);
+	/* The BRDCFG4 register controls general board configuration.
+	 *|-------------------------------------------|
+	 *|Field  | Function                          |
+	 *|-------------------------------------------|
+	 *|5      | CAN I/O Enable (net CFG_CAN_EN_B):|
+	 *|CAN_EN | 0= CAN transceivers are disabled. |
+	 *|       | 1= CAN transceivers are enabled.  |
+	 *|-------------------------------------------|
+	 */
+	brdcfg |= BIT_MASK(5);
+	QIXIS_WRITE(brdcfg[4], brdcfg);
 
 	return 0;
 }

@@ -108,6 +108,72 @@
 		       0x82000000 0x0 0x40000000 0x88 0x40000000 0x0 0x40000000>; /* non-prefetchable memory */
 	};
 
+	pcie@1f0000000 {
+		compatible = "pci-host-ecam-generic";
+		/* ECAM bus 0, HW has more space reserved but not populated */
+		bus-range = <0x0 0x0>;
+		reg = <0x01 0xf0000000 0x0 0x100000>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		ranges= <0x82000000 0x0 0x00000000 0x1 0xf8000000 0x0 0x160000>;
+		enetc0: pci@0,0 {
+			reg = <0x000000 0 0 0 0>;
+			status = "disabled";
+		};
+		enetc1: pci@0,1 {
+			reg = <0x000100 0 0 0 0>;
+			status = "disabled";
+		};
+		enetc2: pci@0,2 {
+			reg = <0x000200 0 0 0 0>;
+			status = "okay";
+			phy-mode = "internal";
+		};
+		mdio0: pci@0,3 {
+			#address-cells=<0>;
+			#size-cells=<1>;
+			reg = <0x000300 0 0 0 0>;
+			status = "disabled";
+		};
+		ethsw: pci@0,5 {
+			#address-cells=<0>;
+			#size-cells=<1>;
+			reg = <0x000500 0 0 0 0>;
+			port@0 {
+				reg = <0>;
+				status = "disabled";
+			};
+			port@1 {
+				reg = <1>;
+				status = "disabled";
+			};
+			port@2 {
+				reg = <2>;
+				status = "disabled";
+			};
+			port@3 {
+				reg = <3>;
+				status = "disabled";
+			};
+			port@4 {
+				reg = <4>;
+				phy-mode = "internal";
+				status = "okay";
+			};
+			port@5 {
+				reg = <5>;
+				phy-mode = "internal";
+				status = "okay";
+			};
+		};
+		enetc6: pci@0,6 {
+			reg = <0x000600 0 0 0 0>;
+			status = "okay";
+			phy-mode = "internal";
+		};
+	};
+
 	i2c0: i2c@2000000 {
 		compatible = "fsl,vf610-i2c";
 		#address-cells = <1>;

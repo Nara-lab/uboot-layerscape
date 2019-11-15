@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2011 Freescale Semiconductor
+ * Copyright 2019 NXP
  * Author: Shengzhou Liu <Shengzhou.Liu@freescale.com>
  *
  * This file provides support for the QIXIS of some Freescale reference boards.
@@ -31,13 +32,30 @@
 #ifdef CONFIG_SYS_I2C_FPGA_ADDR
 u8 qixis_read_i2c(unsigned int reg)
 {
+#ifndef CONFIG_DM_I2C
 	return i2c_reg_read(CONFIG_SYS_I2C_FPGA_ADDR, reg);
+#else
+	struct udevice *dev;
+
+	if (i2c_get_chip_for_busnum(0, CONFIG_SYS_I2C_FPGA_ADDR, 1, &dev))
+		return 0xff;
+
+	return dm_i2c_reg_read(dev, reg);
+#endif
 }
 
 void qixis_write_i2c(unsigned int reg, u8 value)
 {
 	u8 val = value;
+#ifndef CONFIG_DM_I2C
 	i2c_reg_write(CONFIG_SYS_I2C_FPGA_ADDR, reg, val);
+#else
+	struct udevice *dev;
+
+	if (!i2c_get_chip_for_busnum(0, CONFIG_SYS_I2C_FPGA_ADDR, 1, &dev))
+		dm_i2c_reg_write(dev, reg, val);
+#endif
+
 }
 #endif
 

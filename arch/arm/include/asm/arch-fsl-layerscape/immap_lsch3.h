@@ -31,6 +31,8 @@
 #define SYS_NXP_FSPI_LUT_BASE_ADDR		0x200
 #endif
 #define CONFIG_SYS_FSL_ESDHC_ADDR		(CONFIG_SYS_IMMR + 0x01140000)
+#define FSL_ESDHC1_BASE_ADDR			CONFIG_SYS_FSL_ESDHC_ADDR
+#define FSL_ESDHC2_BASE_ADDR			(CONFIG_SYS_IMMR + 0x01150000)
 #ifndef CONFIG_NXP_LSCH3_2
 #define CONFIG_SYS_IFC_ADDR			(CONFIG_SYS_IMMR + 0x01240000)
 #endif
@@ -85,9 +87,22 @@
 #define TZASC_REGION_ATTRIBUTES_0(x)	((TZASC1_BASE + (x * 0x10000)) + 0x110)
 #define TZASC_REGION_ID_ACCESS_0(x)	((TZASC1_BASE + (x * 0x10000)) + 0x114)
 
+/* EDMA */
+#define EDMA_BASE_ADDR				(CONFIG_SYS_IMMR + 0x012c0000)
+
 /* SATA */
 #define AHCI_BASE_ADDR1				(CONFIG_SYS_IMMR + 0x02200000)
 #define AHCI_BASE_ADDR2				(CONFIG_SYS_IMMR + 0x02210000)
+
+/* QDMA */
+#define QDMA_BASE_ADDR				(CONFIG_SYS_IMMR + 0x07380000)
+#define QMAN_CQSIDR_REG				0x20a80
+
+/* DISPLAY */
+#define DISPLAY_BASE_ADDR			(CONFIG_SYS_IMMR + 0x0e080000)
+
+/* GPU */
+#define GPU_BASE_ADDR				(CONFIG_SYS_IMMR + 0x0e0c0000)
 
 /* SFP */
 #define CONFIG_SYS_SFP_ADDR		(CONFIG_SYS_IMMR + 0x00e80200)
@@ -95,10 +110,18 @@
 /* SEC */
 #define CONFIG_SYS_FSL_SEC_OFFSET		0x07000000ull
 #define CONFIG_SYS_FSL_JR0_OFFSET		0x07010000ull
+#define FSL_SEC_JR0_OFFSET			CONFIG_SYS_FSL_JR0_OFFSET
+#define FSL_SEC_JR1_OFFSET			0x07020000ull
+#define FSL_SEC_JR2_OFFSET			0x07030000ull
+#define FSL_SEC_JR3_OFFSET			0x07040000ull
 #define CONFIG_SYS_FSL_SEC_ADDR \
 	(CONFIG_SYS_IMMR + CONFIG_SYS_FSL_SEC_OFFSET)
 #define CONFIG_SYS_FSL_JR0_ADDR \
 	(CONFIG_SYS_IMMR + CONFIG_SYS_FSL_JR0_OFFSET)
+#define FSL_SEC_JR0_BASE_ADDR (CONFIG_SYS_IMMR + FSL_SEC_JR0_OFFSET)
+#define FSL_SEC_JR1_BASE_ADDR (CONFIG_SYS_IMMR + FSL_SEC_JR1_OFFSET)
+#define FSL_SEC_JR2_BASE_ADDR (CONFIG_SYS_IMMR + FSL_SEC_JR2_OFFSET)
+#define FSL_SEC_JR3_BASE_ADDR (CONFIG_SYS_IMMR + FSL_SEC_JR3_OFFSET)
 
 #ifdef CONFIG_TFABOOT
 #ifdef CONFIG_NXP_LSCH3_2
@@ -192,6 +215,9 @@
 #elif CONFIG_ARCH_LS1028A
 #define CONFIG_SYS_PCIE1_PHYS_ADDR		0x8000000000ULL
 #define CONFIG_SYS_PCIE2_PHYS_ADDR		0x8800000000ULL
+#define CONFIG_SYS_PCIE3_PHYS_ADDR		0x01f0000000ULL
+/* this is used by integrated PCI on LS1028, includes ECAM and register space */
+#define CONFIG_SYS_PCIE3_PHYS_SIZE		0x0010000000ULL
 #else
 #define CONFIG_SYS_PCIE1_PHYS_ADDR		0x1000000000ULL
 #define CONFIG_SYS_PCIE2_PHYS_ADDR		0x1200000000ULL
@@ -426,7 +452,8 @@ struct ccsr_gur {
 	u32	usb2_amqr;
 	u8	res_528[0x530-0x528];	/* add more registers when needed */
 	u32	sdmm1_amqr;
-	u8	res_534[0x550-0x534];	/* add more registers when needed */
+	u32	sdmm2_amqr;
+	u8	res_538[0x550 - 0x538];	/* add more registers when needed */
 	u32	sata1_amqr;
 	u32	sata2_amqr;
 	u8	res_558[0x570-0x558];	/* add more registers when needed */
@@ -434,7 +461,8 @@ struct ccsr_gur {
 	u8	res_574[0x590-0x574];	/* add more registers when needed */
 	u32	spare1_amqr;
 	u32	spare2_amqr;
-	u8	res_598[0x620-0x598];	/* add more registers when needed */
+	u32	spare3_amqr;
+	u8	res_59c[0x620 - 0x59c];	/* add more registers when needed */
 	u32	gencr[7];	/* General Control Registers */
 	u8	res_63c[0x640-0x63c];	/* add more registers when needed */
 	u32	cgensr1;	/* Core General Status Register */

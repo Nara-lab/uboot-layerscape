@@ -76,7 +76,7 @@
 
 #if defined(CONFIG_ARCH_LS2080A) || defined(CONFIG_ARCH_LX2160A)
 #define FSL_DMA_STREAM_ID		6
-#elif defined(CONFIG_ARCH_LS1088A)
+#elif defined(CONFIG_ARCH_LS1088A) || defined(CONFIG_ARCH_LS1028A)
 #define FSL_DMA_STREAM_ID		5
 #endif
 
@@ -97,5 +97,29 @@
 /* DPAA2 - set in MC DPC and alloced by MC */
 #define FSL_DPAA2_STREAM_ID_START	23
 #define FSL_DPAA2_STREAM_ID_END		63
+
+#define FSL_SEC_STREAM_ID		64
+#define FSL_SEC_JR1_STREAM_ID		65
+#define FSL_SEC_JR2_STREAM_ID		66
+#define FSL_SEC_JR3_STREAM_ID		67
+#define FSL_SEC_JR4_STREAM_ID		68
+
+#define FSL_SDMMC2_STREAM_ID		69
+
+#ifdef CONFIG_ARCH_LS1028A
+/*
+ * On these chips the EDMA StreamID cannot be set to an arbitrary value as it
+ * has bits 4 and 6 always set to 1. Redefine the StreamID value to match
+ * this limitation. Note that StreamID 0x28 is from the DPAA2 range of
+ * StreamIDs and since there's no DPAA2 on this chip we can safely use the
+ * value.
+ */
+#define FSL_EDMA_STREAM_ID 		40
+#else
+#define FSL_EDMA_STREAM_ID		70
+#endif
+
+#define FSL_GPU_STREAM_ID		71
+#define FSL_DISPLAY_STREAM_ID		72
 
 #endif

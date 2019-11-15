@@ -53,6 +53,26 @@
 
 &i2c0 {
 	status = "okay";
+	u-boot,dm-pre-reloc;
+
+	 i2c-mux@77 {
+
+		compatible = "nxp,pca9547";
+		reg = <0x77>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		i2c@3 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x3>;
+
+			rtc@51 {
+				compatible = "pcf2127-rtc";
+				reg = <0x51>;
+			};
+		};
+	};
 };
 
 &i2c1 {
@@ -101,4 +121,53 @@
 
 &usb2 {
 	status = "okay";
+};
+
+&enetc0 {
+	status = "okay";
+	phy-mode = "sgmii";
+	phy-handle = <&rdb_phy0>;
+};
+
+&ethsw {
+	port@0 {
+		status = "okay";
+		phy-mode = "qsgmii";
+		phy-handle = <&sw_phy0>;
+	};
+	port@1 {
+		status = "okay";
+		phy-mode = "qsgmii";
+		phy-handle = <&sw_phy1>;
+	};
+	port@2 {
+		status = "okay";
+		phy-mode = "qsgmii";
+		phy-handle = <&sw_phy2>;
+	};
+	port@3 {
+		status = "okay";
+		phy-mode = "qsgmii";
+		phy-handle = <&sw_phy3>;
+	};
+};
+
+&mdio0 {
+	status = "okay";
+	rdb_phy0: phy@2 {
+		reg = <2>;
+	};
+
+	sw_phy0: phy@10 {
+		reg = <0x10>;
+	};
+	sw_phy1: phy@11 {
+		reg = <0x11>;
+	};
+	sw_phy2: phy@12 {
+		reg = <0x12>;
+	};
+	sw_phy3: phy@13 {
+		reg = <0x13>;
+	};
 };

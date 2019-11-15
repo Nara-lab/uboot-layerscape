@@ -2,7 +2,7 @@
 /*
  * NXP ls1088a SOC common device tree source
  *
- * Copyright 2017 NXP
+ * Copyright 2017, 2019 NXP
  */
 
 / {
@@ -32,6 +32,38 @@
 			     <1 14 0x8>, /* Physical Non-Secure PPI, active-low */
 			     <1 11 0x8>, /* Virtual PPI, active-low */
 			     <1 10 0x8>; /* Hypervisor PPI, active-low */
+	};
+
+	i2c0: i2c@2000000 {
+		compatible = "fsl,vf610-i2c";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x0 0x2000000 0x0 0x10000>;
+		interrupts = <0 34 4>;
+	};
+
+	i2c1: i2c@2010000 {
+		compatible = "fsl,vf610-i2c";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x0 0x2010000 0x0 0x10000>;
+		interrupts = <0 34 4>;
+	};
+
+	i2c2: i2c@2020000 {
+		compatible = "fsl,vf610-i2c";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x0 0x2020000 0x0 0x10000>;
+		interrupts = <0 35 4>;
+	};
+
+	i2c3: i2c@2030000 {
+		compatible = "fsl,vf610-i2c";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x0 0x2030000 0x0 0x10000>;
+		interrupts = <0 35 4>;
 	};
 
 	serial0: serial@21c0500 {
