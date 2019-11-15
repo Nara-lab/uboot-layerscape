@@ -26,6 +26,10 @@
 #define SPD_EEPROM_ADDRESS		0x51
 #define CONFIG_SYS_SPD_BUS_NUM		0
 
+#define CONFIG_FSL_DDR_BIST	/* enable built-in memory test */
+#ifndef CONFIG_SPL
+#define CONFIG_FSL_DDR_INTERACTIVE	/* Interactive debugging */
+#endif
 /*
  * Environment
  */
