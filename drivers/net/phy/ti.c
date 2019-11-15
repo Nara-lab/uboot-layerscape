@@ -308,16 +308,13 @@ static int dp83867_config(struct phy_device *phydev)
 
 	val = phy_read_mmd_indirect(phydev, DP83867_CFG4,
 				    DP83867_DEVADDR, phydev->addr);
-	printf("DP83867-%x: Fixing Strapping 0x%x\n", phydev->addr, val);
 	val &= ~BIT(7);
 	phy_write_mmd_indirect(phydev, DP83867_CFG4,
 			       DP83867_DEVADDR, phydev->addr, val);
 	val = phy_read_mmd_indirect(phydev, DP83867_CFG4,
 				    DP83867_DEVADDR, phydev->addr);
-	printf("DP83867-%x: Fixed Strapping 0x%x\n", phydev->addr, val);
 
 	if (phy_interface_is_rgmii(phydev)) {
-		printf("DP83867-%x: RGMII\n", phydev->addr);
 		ret = phy_write(phydev, MDIO_DEVAD_NONE, MII_DP83867_PHYCTRL,
 			(DP83867_MDI_CROSSOVER_AUTO << DP83867_MDI_CROSSOVER) |
 			(dp83867->fifo_depth << DP83867_PHYCR_FIFO_DEPTH_SHIFT));
@@ -344,7 +341,6 @@ static int dp83867_config(struct phy_device *phydev)
 		}
 
 	} else if (phy_interface_is_sgmii(phydev)) {
-		printf("DP83867-%x: SGMII\n", phydev->addr);
 		phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR,
 			  (BMCR_ANENABLE | BMCR_FULLDPLX | BMCR_SPEED1000));
 
@@ -377,7 +373,6 @@ static int dp83867_config(struct phy_device *phydev)
 			val |= (DP83867_RGMII_TX_CLK_DELAY_EN |
 				DP83867_RGMII_RX_CLK_DELAY_EN);
 
-		printf("DP83867-%x: Enabling TX Delay\n", phydev->addr);
 		val |= DP83867_RGMII_TX_CLK_DELAY_EN;
 
 		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID)
@@ -404,6 +399,13 @@ static int dp83867_config(struct phy_device *phydev)
 					       DP83867_DEVADDR, phydev->addr,
 					       val);
 		}
+
+		val = phy_read_mmd_indirect(phydev, DP83867_IO_MUX_CFG,
+					    DP83867_DEVADDR, phydev->addr);
+		val &= ~DP83867_IO_MUX_CFG_CLK_O_SEL_MASK;
+		val |= (0x00 << DP83867_IO_MUX_CFG_CLK_O_SEL_SHIFT);
+		phy_write_mmd_indirect(phydev, DP83867_IO_MUX_CFG,
+				       DP83867_DEVADDR, phydev->addr, val);
 	}
 
 	if (dp83867->port_mirroring != DP83867_PORT_MIRRORING_KEEP)
