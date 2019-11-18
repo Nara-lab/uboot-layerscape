@@ -381,8 +381,8 @@ static int dp83867_config(struct phy_device *phydev)
 		phy_write_mmd_indirect(phydev, DP83867_RGMIICTL,
 				       DP83867_DEVADDR, phydev->addr, val);
 
-		delay = (dp83867->rx_id_delay |
-			 (0x80 << DP83867_RGMII_TX_CLK_DELAY_SHIFT));
+		delay = (DP83867_RGMIIDCTL_250_PS |
+			 (DP83867_RGMIIDCTL_2_25_NS << DP83867_RGMII_TX_CLK_DELAY_SHIFT));
 
 		phy_write_mmd_indirect(phydev, DP83867_RGMIIDCTL,
 				       DP83867_DEVADDR, phydev->addr, delay);
