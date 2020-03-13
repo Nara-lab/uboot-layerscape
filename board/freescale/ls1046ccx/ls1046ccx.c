@@ -68,14 +68,14 @@ int pld_enable_reset_req(void)
 		return err;
 	}
 
-	i2c_reg_write(0x20, 0x02, 0x00);
-	if (i2c_reg_read(0x20, 0x02) != 0x00) {
+	i2c_reg_write(0x20, 0x02, 0x78);
+	if (i2c_reg_read(0x20, 0x78) != 0x00) {
 		printf("Failed to set direction on bank b.\n");
 		return err;
 	}
 
-	i2c_reg_write(0x20, 0x00, 0xff);
-	if (i2c_reg_read(0x20, 0x00) != 0xff) {
+	i2c_reg_write(0x20, 0x00, 0x87);
+	if ((i2c_reg_read(0x20, 0x00) & 0x87) != 0x87) {
 		printf("Failed to release resets on bank b.\n");
 		return err;
 	}
@@ -86,7 +86,7 @@ int pld_enable_reset_req(void)
 		return err;
 	}
 
-	printf("Reset PLD: live\n");
+	printf("Reset PLD: enabled\n");
 
 	return 0;
 }
@@ -141,9 +141,7 @@ void config_board_mux(void)
 int misc_init_r(void)
 {
 	config_board_mux();
-
-	pld_enable_reset_req();
-	return 0;
+	return pld_enable_reset_req();
 }
 #endif
 
