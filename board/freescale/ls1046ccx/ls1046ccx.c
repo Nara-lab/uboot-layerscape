@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
+ * Updates Copyright 2020 CCX Technologies, Inc.
  */
 
 #include <common.h>
@@ -35,6 +36,19 @@ int board_early_init_f(void)
 int checkboard(void)
 {
 	return 0;
+}
+
+void config_floating_gpio_as_outputs(void)
+{
+	u32 val;
+	struct ccsr_gpio *pgpio = (void *)(GPIO2_BASE_ADDR);
+
+	val = in_be32(&pgpio->gpdir);
+	/* configure GPIO2 12-15 as outputs, NOTE bit endianess flip  */
+	val |=  0x00070000;
+	out_be32(&pgpio->gpdir, val);
+
+	printf("GPIO Config: complete\n");
 }
 
 int pld_enable_reset_req(void)
@@ -141,6 +155,7 @@ void config_board_mux(void)
 int misc_init_r(void)
 {
 	config_board_mux();
+	config_floating_gpio_as_outputs();
 	return pld_enable_reset_req();
 }
 #endif
