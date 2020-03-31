@@ -107,6 +107,7 @@ int pld_enable_reset_req(void)
 
 int board_init(void)
 {
+	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
 
 #ifdef CONFIG_SECURE_BOOT
 	/*
@@ -129,6 +130,17 @@ int board_init(void)
 #ifdef CONFIG_FSL_LS_PPA
 	ppa_init();
 #endif
+
+	/* The GIC driver only supports HIGH level and RISING edge
+	 * IRQs, so any LOW level of FALLING IRQs need to be
+	 * inverted.
+	 *
+	 * - SCFG_INTPCR resgister is little endian bit order
+	 * - the only non-inverted IRQ is IRQ5 (the acceleromter)
+	 *
+	 * */
+
+	out_be32(&scfg->intpcr, 0xfbf00000);
 
 	return 0;
 }
