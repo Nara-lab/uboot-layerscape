@@ -162,7 +162,7 @@ int fdt_get_smmu_phandle(void *blob)
 
 	noff = fdt_node_offset_by_compatible(blob, -1, "arm,mmu-500");
 	if (noff < 0) {
-		printf("WARNING failed to get smmu node: %s\n",
+		printf("Couldn't find smmu node, this is expected on systems using the NXP SDK linux drivers: %s\n",
 		       fdt_strerror(noff));
 		return noff;
 	}
