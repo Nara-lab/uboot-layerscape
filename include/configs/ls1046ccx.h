@@ -36,8 +36,8 @@
 #endif
 #endif
 
-#define SD_BOOTCOMMAND "echo NO BOOT CMD SD"
-#define QSPI_NOR_BOOTCOMMAND "echo NO BOOT CMD QSPI"
+#define SD_BOOTCOMMAND "run system_load"
+#define QSPI_NOR_BOOTCOMMAND "run system_boot"
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"hwconfig=fsl_ddr:bank_intlv=auto\0" \
 	"bootargs=earlycon=uart8250,mmio,0x21c0500 console=ttyS0,115200\0" \
@@ -57,8 +57,8 @@
 	"ram_to_sata=" \
 		"scsi rescan && " \
 		"ext4write scsi 0:1 ${loadaddr_ram} /${filename} ${filesize}\0" \
-	"sdcard_to_ram=ext4load mmc 0:1 ${loadaddr_ram} ${filename}\0" \
-	"sata_to_ram=ext4load scsi 0:1 ${loadaddr_ram} ${filename}\0" \
+	"sdcard_to_ram=ext4load mmc 0:1 ${loadaddr_ram} /${filename}\0" \
+	"sata_to_ram=ext4load scsi 0:1 ${loadaddr_ram} /${filename}\0" \
 	"sdcard_to_flash=" \
 		"run sdcard_to_ram && " \
 		"run ram_to_flash\0" \
@@ -67,12 +67,8 @@
 		"setenv loadaddr_flash 0x000000 && " \
 		"run sdcard_to_flash\0" \
 	"sdcard_to_flash_fib=" \
-		"setenv filename fip.pbl && " \
+		"setenv filename fip.bin && " \
 		"setenv loadaddr_flash 0x100000 && " \
-		"run sdcard_to_flash\0" \
-	"sdcard_to_flash_fman=" \
-		"setenv filename fman.bin && " \
-		"setenv loadaddr_flash 0x400000 && " \
 		"run sdcard_to_flash\0" \
 	"sdcard_to_ram_dtb=" \
 		"setenv filename linux.dtb && " \
@@ -92,8 +88,10 @@
 		"run sata_to_ram\0" \
 	"sata_to_env_rootpart=" \
 		"setenv filename ${filename_onetimeenv} && " \
-		"if run sdcard_to_ram; then " \
+		"if run sata_to_ram; then " \
 			"env import -t ${loadaddr_ram} ${filesize} lastboot defaultrootpart onetimerootpart; " \
+		"else " \
+			"true; " \
 		"fi && " \
 		"if env exists defaultrootpart; then "\
 			"setenv bootarg_rootpart ${defaultrootpart}; " \
@@ -102,6 +100,8 @@
 		"fi && " \
 		"if env exists onetimerootpart; then " \
 			"setenv bootarg_rootpart ${onetimerootpart}; " \
+		"else " \
+			"true; " \
 		"fi\0" \
 	"env_to_sata_rootpart=" \
 		"if env exists onetimerootpart || test \"${lastboot}\" != \"${bootarg_rootpart}\"; then " \
@@ -109,6 +109,8 @@
 			"env export -t ${loadaddr_ram} lastboot defaultrootpart && " \
 			"setenv filename ${filename_onetimeenv} && " \
 			"run ram_to_sata; " \
+		"else " \
+			"true; " \
 		"fi\0" \
 	"boot_kernel_loader=" \
 		"run bootargs_enable_loader && " \
@@ -122,15 +124,17 @@
 		"run sata_to_ram_kernel && " \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
 	"system_load=" \
-		"run sdcard_to_flash_pbl && " \
-		"run sdcard_to_flash_fib && " \
-		"run sdcard_to_flash_fman && " \
-		"run boot_kernel_loader\0" \
+		"if run sdcard_to_flash_pbl && run sdcard_to_flash_fib; then " \
+			"run boot_kernel_loader; esbc_halt; " \
+		"else " \
+			"echo Failed to find file firmware ${filename} && esbc_halt; " \
+		"fi\0" \
 	"system_boot=" \
-		"scsi rescan &&" \
-		"run sata_to_env_rootpart &&" \
-		"run env_to_sata_rootpart &&" \
-		"run boot_kernel_normal\0" \
+		"if scsi rescan && run sata_to_env_rootpart && run env_to_sata_rootpart; then " \
+			"run boot_kernel_normal; esbc_halt; " \
+		"else " \
+			"echo Failed to setup environment && esbc_halt; " \
+		"fi\0" \
 
 #include <asm/fsl_secure_boot.h>
 
