@@ -7,14 +7,13 @@
 #ifndef __LS1046CCX_H__
 #define __LS1046CCX_H__
 
+#define SPL_NO_MISC
 #include "ls1046a_common.h"
+#undef CONFIG_SYS_DPAA_FMAN
 
 #define CONFIG_SYS_CLK_FREQ		100000000
 #define CONFIG_DDR_CLK_FREQ		100000000
 
-/* Move up so can fit bootloader in 8MB FLASH */
-#undef CONFIG_SYS_FMAN_FW_ADDR
-#define CONFIG_SYS_FMAN_FW_ADDR                0x400000
 
 #define CONFIG_LAYERSCAPE_NS_ACCESS
 
@@ -26,45 +25,7 @@
 #define SPD_EEPROM_ADDRESS		0x51
 #define CONFIG_SYS_SPD_BUS_NUM		0
 
-#ifndef CONFIG_SPL
-#endif
-/*
- * Environment
- */
-#ifndef SPL_NO_ENV
-#define CONFIG_ENV_OVERWRITE
-#endif
-
-#define CONFIG_SYS_MMC_ENV_DEV		0
-
-#define CONFIG_ENV_SIZE			0x2000		/* 8KB */
-#define CONFIG_ENV_OFFSET		0x500000	/* 5MB */
-#define CONFIG_ENV_SECT_SIZE		0x40000		/* 256KB */
-
-/* FMan */
-#ifndef SPL_NO_FMAN
-
-#ifdef CONFIG_NET
-#define CONFIG_PHY_REALTEK
-#endif
-
-#ifdef CONFIG_SYS_DPAA_FMAN
-#define CONFIG_FMAN_ENET
-#define RGMII_PHY1_ADDR			0x0
-#define RGMII_PHY2_ADDR			0x3
-
-#define SGMII_PHY1_ADDR			0xc
-#define SGMII_PHY2_ADDR			0xf
-
-#define SGMII_PHY3_ADDR			0x0
-#define SGMII_PHY4_ADDR			0x1
-
-#define FDT_SEQ_MACADDR_FROM_ENV
-
-#define CONFIG_ETHPRIME			"FM1@DTSEC3"
-#endif
-
-#endif
+#define CONFIG_ENV_SIZE			0x2000
 
 /* QSPI device */
 #ifndef SPL_NO_QSPI
@@ -75,10 +36,101 @@
 #endif
 #endif
 
-#define SPL_NO_MISC
-#undef CONFIG_BOOTCOMMAND
-#define QSPI_NOR_BOOTCOMMAND "run qspi_bootcmd"
-#define SD_BOOTCOMMAND "run sd_bootcmd;"
+#define SD_BOOTCOMMAND "echo NO BOOT CMD SD"
+#define QSPI_NOR_BOOTCOMMAND "echo NO BOOT CMD QSPI"
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"hwconfig=fsl_ddr:bank_intlv=auto\0" \
+	"bootargs=earlycon=uart8250,mmio,0x21c0500 console=ttyS0,115200\0" \
+	"bootargs_enable_loader=setenv bootargs ${bootargs} loader\0" \
+	"bootargs_set_rootfs=setenv bootargs ${bootargs} root=/dev/sda${bootarg_rootpart} ro\0" \
+	"bootargs_set_console=setenv bootargs ${bootargs} console=ttyS0,${baudrate} earlycon=uart8250,mmio,0x21c0500\0" \
+	"bootarg_rootpart=2\0" \
+	"loadaddr_ram=0xa0000000\0" \
+	"loadaddr_flash=0x0\0" \
+	"loadaddr_ram_kernel=0xa0800000\0" \
+	"loadaddr_ram_dtb=0xa0000000\0" \
+	"filename_onetimeenv=uEnv.onetime.txt\0" \
+	"ram_to_flash=" \
+		"sf probe && " \
+		"sf erase ${loadaddr_flash} +${filesize} && " \
+		"sf write ${loadaddr_ram} ${loadaddr_flash} ${filesize}\0" \
+	"ram_to_sata=" \
+		"scsi rescan && " \
+		"ext4write scsi 0:1 ${loadaddr_ram} /${filename} ${filesize}\0" \
+	"sdcard_to_ram=ext4load mmc 0:1 ${loadaddr_ram} ${filename}\0" \
+	"sata_to_ram=ext4load scsi 0:1 ${loadaddr_ram} ${filename}\0" \
+	"sdcard_to_flash=" \
+		"run sdcard_to_ram && " \
+		"run ram_to_flash\0" \
+	"sdcard_to_flash_pbl=" \
+		"setenv filename bl2.pbl && " \
+		"setenv loadaddr_flash 0x000000 && " \
+		"run sdcard_to_flash\0" \
+	"sdcard_to_flash_fib=" \
+		"setenv filename fip.pbl && " \
+		"setenv loadaddr_flash 0x100000 && " \
+		"run sdcard_to_flash\0" \
+	"sdcard_to_flash_fman=" \
+		"setenv filename fman.bin && " \
+		"setenv loadaddr_flash 0x400000 && " \
+		"run sdcard_to_flash\0" \
+	"sdcard_to_ram_dtb=" \
+		"setenv filename linux.dtb && " \
+		"setenv loadaddr_ram ${loadaddr_ram_dtb} && " \
+		"run sdcard_to_ram\0" \
+	"sdcard_to_ram_kernel=" \
+		"setenv filename Image && " \
+		"setenv loadaddr_ram ${loadaddr_ram_kernel} && " \
+		"run sdcard_to_ram\0" \
+	"sata_to_ram_dtb=" \
+		"setenv filename boot-${bootarg_rootpart}/linux.dtb && " \
+		"setenv loadaddr_ram ${loadaddr_ram_dtb} && " \
+		"run sata_to_ram\0" \
+	"sata_to_ram_kernel=" \
+		"setenv filename boot-${bootarg_rootpart}/Image && " \
+		"setenv loadaddr_ram ${loadaddr_ram_kernel} && " \
+		"run sata_to_ram\0" \
+	"sata_to_env_rootpart=" \
+		"setenv filename ${filename_onetimeenv} && " \
+		"if run sdcard_to_ram; then " \
+			"env import -t ${loadaddr_ram} ${filesize} lastboot defaultrootpart onetimerootpart; " \
+		"fi && " \
+		"if env exists defaultrootpart; then "\
+			"setenv bootarg_rootpart ${defaultrootpart}; " \
+		"else " \
+			"setenv defaultrootpart ${bootarg_rootpart}; " \
+		"fi && " \
+		"if env exists onetimerootpart; then " \
+			"setenv bootarg_rootpart ${onetimerootpart}; " \
+		"fi\0" \
+	"env_to_sata_rootpart=" \
+		"if env exists onetimerootpart || test \"${lastboot}\" != \"${bootarg_rootpart}\"; then " \
+			"setenv lastboot ${bootarg_rootpart} && " \
+			"env export -t ${loadaddr_ram} lastboot defaultrootpart && " \
+			"setenv filename ${filename_onetimeenv} && " \
+			"run ram_to_sata; " \
+		"fi\0" \
+	"boot_kernel_loader=" \
+		"run bootargs_enable_loader && " \
+		"run sdcard_to_ram_dtb && " \
+		"run sdcard_to_ram_kernel && " \
+		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
+	"boot_kernel_normal=" \
+		"run bootargs_set_rootfs && " \
+		"run bootargs_set_console && " \
+		"run sata_to_ram_dtb && " \
+		"run sata_to_ram_kernel && " \
+		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
+	"system_load=" \
+		"run sdcard_to_flash_pbl && " \
+		"run sdcard_to_flash_fib && " \
+		"run sdcard_to_flash_fman && " \
+		"run boot_kernel_loader\0" \
+	"system_boot=" \
+		"scsi rescan &&" \
+		"run sata_to_env_rootpart &&" \
+		"run env_to_sata_rootpart &&" \
+		"run boot_kernel_normal\0" \
 
 #include <asm/fsl_secure_boot.h>
 
