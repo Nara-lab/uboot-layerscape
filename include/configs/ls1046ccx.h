@@ -59,6 +59,12 @@
 #define SD_BOOTCOMMAND "run system_load"
 #define QSPI_NOR_BOOTCOMMAND "run system_boot"
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"ethaddr=ce:ce:ce:ce:ce:01\0" \
+	"eth1addr=ce:ce:ce:ce:ce:02\0" \
+	"eth2addr=ce:ce:ce:ce:ce:03\0" \
+	"eth3addr=ce:ce:ce:ce:ce:04\0" \
+	"eth4addr=ce:ce:ce:ce:ce:05\0" \
+	"eth5addr=ce:ce:ce:ce:ce:06\0" \
 	"hwconfig=fsl_ddr:bank_intlv=auto\0" \
 	"bootargs=earlycon=uart8250,mmio,0x21c0500 console=ttyS0,115200\0" \
 	"bootargs_enable_loader=setenv bootargs ${bootargs} loader\0" \
