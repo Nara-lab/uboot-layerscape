@@ -9,7 +9,6 @@
 
 #define SPL_NO_MISC
 #include "ls1046a_common.h"
-#undef CONFIG_SYS_DPAA_FMAN
 
 #define CONFIG_SYS_CLK_FREQ		100000000
 #define CONFIG_DDR_CLK_FREQ		100000000
@@ -26,6 +25,27 @@
 #define CONFIG_SYS_SPD_BUS_NUM		0
 
 #define CONFIG_ENV_SIZE			0x2000
+#define CONFIG_SYS_MMC_ENV_DEV		0
+
+#ifndef SPL_NO_FMAN
+#ifdef CONFIG_SYS_DPAA_FMAN
+
+#define CONFIG_FMAN_ENET
+#define RGMII_PHY1_ADDR			0x0
+#define RGMII_PHY2_ADDR			0x3
+
+#define SGMII_PHY1_ADDR			0xc
+#define SGMII_PHY2_ADDR			0xf
+
+#define SGMII_PHY3_ADDR			0x0
+#define SGMII_PHY4_ADDR			0x1
+
+#define FDT_SEQ_MACADDR_FROM_ENV
+
+#define CONFIG_ETHPRIME			"FM1@DTSEC3"
+#endif
+
+#endif
 
 /* QSPI device */
 #ifndef SPL_NO_QSPI
