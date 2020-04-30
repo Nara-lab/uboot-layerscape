@@ -59,22 +59,40 @@
 #define SD_BOOTCOMMAND "run system_load"
 #define QSPI_NOR_BOOTCOMMAND "run system_boot"
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"ethaddr=ce:ce:ce:ce:ce:01\0" \
-	"eth1addr=ce:ce:ce:ce:ce:02\0" \
-	"eth2addr=ce:ce:ce:ce:ce:03\0" \
-	"eth3addr=ce:ce:ce:ce:ce:04\0" \
-	"eth4addr=ce:ce:ce:ce:ce:05\0" \
-	"eth5addr=ce:ce:ce:ce:ce:06\0" \
+	"crypto_set_key=" \
+		"setenv _key_addr ${loadaddr_ram_key} && " \
+		"mw.l ${_key_addr} 0x00000000 && " \
+		"setexpr ${_key_addr} ${_key_addr} + 0x4 && " \
+		"mw.l ${_key_addr} 0x00000000 && " \
+		"setexpr ${_key_addr} ${_key_addr} + 0x4 && " \
+		"mw.l ${_key_addr} 0x00000000 && " \
+		"setexpr ${_key_addr} ${_key_addr} + 0x4 && " \
+		"mw.l ${_key_addr} 0x00000000\0" \
+	"crypto_encrypt=" \
+		"run crypto_set_key && " \
+		"blob enc ${loadaddr_ram_dec} ${loadaddr_ram_enc} ${filesize} ${loadaddr_ram_key} && " \
+		"setexpr filesize ${filesize} + 0x30\0" \
+	"crypto_decrypt=" \
+		"run crypto_set_key && " \
+		"blob dec ${loadaddr_ram_enc} ${loadaddr_ram_dec} ${filesize} ${loadaddr_ram_key} && " \
+		"setexpr filesize ${filesize} - 0x30\0" \
 	"hwconfig=fsl_ddr:bank_intlv=auto\0" \
 	"bootargs=earlycon=uart8250,mmio,0x21c0500 console=ttyS0,115200\0" \
 	"bootargs_enable_loader=setenv bootargs ${bootargs} loader\0" \
 	"bootargs_set_rootfs=setenv bootargs ${bootargs} root=/dev/sda${bootarg_rootpart} ro\0" \
 	"bootargs_set_console=setenv bootargs ${bootargs} console=ttyS0,${baudrate} earlycon=uart8250,mmio,0x21c0500\0" \
+	"bootargs_set_ccx=setenv bootargs ${bootargs} ccx.serialnum=\"${serialnum}\"\0" \
 	"bootarg_rootpart=2\0" \
 	"loadaddr_ram=0xa0000000\0" \
+	"loadaddr_ram_dec=0xa0000000\0" \
+	"loadaddr_ram_enc=0xa0a00000\0" \
 	"loadaddr_flash=0x0\0" \
+	"loadaddr_flash_bl2=0x000000\0" \
+	"loadaddr_flash_fip=0x100000\0" \
+	"loadaddr_flash_ids=0x500000\0" \
 	"loadaddr_ram_kernel=0xa0800000\0" \
 	"loadaddr_ram_dtb=0xa0000000\0" \
+	"loadaddr_ram_key=0x87000000\0" \
 	"filename_onetimeenv=uEnv.onetime.txt\0" \
 	"ram_to_flash=" \
 		"sf probe && " \
@@ -85,16 +103,17 @@
 		"ext4write scsi 0:1 ${loadaddr_ram} /${filename} ${filesize}\0" \
 	"sdcard_to_ram=ext4load mmc 0:1 ${loadaddr_ram} /${filename}\0" \
 	"sata_to_ram=ext4load scsi 0:1 ${loadaddr_ram} /${filename}\0" \
+	"flash_to_ram=sf probe && sf read ${loadaddr_ram} ${loadaddr_flash} ${filesize}\0" \
 	"sdcard_to_flash=" \
 		"run sdcard_to_ram && " \
 		"run ram_to_flash\0" \
 	"sdcard_to_flash_pbl=" \
 		"setenv filename bl2.pbl && " \
-		"setenv loadaddr_flash 0x000000 && " \
+		"setenv loadaddr_flash ${loadaddr_flash_bl2} && " \
 		"run sdcard_to_flash\0" \
 	"sdcard_to_flash_fib=" \
 		"setenv filename fip.bin && " \
-		"setenv loadaddr_flash 0x100000 && " \
+		"setenv loadaddr_flash ${loadaddr_flash_fip} && " \
 		"run sdcard_to_flash\0" \
 	"sdcard_to_ram_dtb=" \
 		"setenv filename linux.dtb && " \
@@ -112,6 +131,18 @@
 		"setenv filename boot-${bootarg_rootpart}/Image && " \
 		"setenv loadaddr_ram ${loadaddr_ram_kernel} && " \
 		"run sata_to_ram\0" \
+	"set_rootpart_from_defaultrootpart=" \
+		"if test \"${defaultrootpart}\" = \"2\" ; then " \
+			"setenv bootarg_rootpart 2; " \
+		"else if test \"${defaultrootpart}\" = \"3\" ; then " \
+			"setenv bootarg_rootpart 3; " \
+		"fi\0" \
+	"set_rootpart_from_onetimerootpart=" \
+		"if test \"${onetimerootpart}\" = \"2\" ; then " \
+			"setenv bootarg_rootpart 2; " \
+		"else if test \"${onetimerootpart}\" = \"3\" ; then " \
+			"setenv bootarg_rootpart 3; " \
+		"fi\0" \
 	"sata_to_env_rootpart=" \
 		"setenv filename ${filename_onetimeenv} && " \
 		"if run sata_to_ram; then " \
@@ -120,12 +151,12 @@
 			"true; " \
 		"fi && " \
 		"if env exists defaultrootpart; then "\
-			"setenv bootarg_rootpart ${defaultrootpart}; " \
+			"run set_rootpart_from_defaultrootpart; " \
 		"else " \
 			"setenv defaultrootpart ${bootarg_rootpart}; " \
 		"fi && " \
 		"if env exists onetimerootpart; then " \
-			"setenv bootarg_rootpart ${onetimerootpart}; " \
+			"run set_rootpart_from_onetimerootpart; " \
 		"else " \
 			"true; " \
 		"fi\0" \
@@ -140,24 +171,45 @@
 		"fi\0" \
 	"boot_kernel_loader=" \
 		"run bootargs_enable_loader && " \
+		"run boot_kernel_sdcard\0" \
+	"boot_kernel_sdcard=" \
+		"run bootargs_set_console && " \
+		"run bootargs_set_ccx && " \
 		"run sdcard_to_ram_dtb && " \
 		"run sdcard_to_ram_kernel && " \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
-	"boot_kernel_normal=" \
+	"boot_kernel_sata=" \
 		"run bootargs_set_rootfs && " \
 		"run bootargs_set_console && " \
+		"run bootargs_set_ccx && " \
 		"run sata_to_ram_dtb && " \
 		"run sata_to_ram_kernel && " \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
+	"system_set_ids=" \
+		"askenv serialnum \"Enter Serial Number [nnnn], ie. 1062 => \" 6 && " \
+		"askenv ethaddr \"Enter MAC Address 1 [xx:xx:xx:xx:xx:xx], ie. 84:8B:CD:20:00:C8 => \" 17 && " \
+		"askenv eth1addr \"Enter MAC Address 2 [xx:xx:xx:xx:xx:xx], ie. 84:8B:CD:20:00:C9 => \" 17 && " \
+		"askenv eth2addr \"Enter MAC Address 3 [xx:xx:xx:xx:xx:xx], ie. 84:8B:CD:20:00:CA => \" 17 && " \
+		"askenv eth3addr \"Enter MAC Address 4 [xx:xx:xx:xx:xx:xx], ie. 84:8B:CD:20:00:CB => \" 17 && " \
+		"env export -t ${loadaddr_ram} serialnum ethaddr eth1addr eth2addr eth3addr && " \
+		"setenv loadaddr_flash ${loadaddr_flash_ids} && " \
+		"run ram_to_flash\0" \
+	"system_get_ids=" \
+		"setenv loadaddr_flash ${loadaddr_flash_ids} && " \
+		"setenv filesize 1024 && " \
+		"run flash_to_ram &&" \
+		"env import -t ${loadaddr_ram} ${filesize} serialnum ethaddr eth1addr eth2addr eth3add\0" \
 	"system_load=" \
+		"run system_set_ids && " \
 		"if run sdcard_to_flash_pbl && run sdcard_to_flash_fib; then " \
 			"run boot_kernel_loader; esbc_halt; " \
 		"else " \
 			"echo Failed to find file firmware ${filename} && esbc_halt; " \
 		"fi\0" \
 	"system_boot=" \
+		"run system_get_ids; " \
 		"if scsi rescan && run sata_to_env_rootpart && run env_to_sata_rootpart; then " \
-			"run boot_kernel_normal; esbc_halt; " \
+			"run boot_kernel_sata; esbc_halt; " \
 		"else " \
 			"echo Failed to setup environment && esbc_halt; " \
 		"fi\0" \
