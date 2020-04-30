@@ -134,13 +134,13 @@
 	"set_rootpart_from_defaultrootpart=" \
 		"if test \"${defaultrootpart}\" = \"2\" ; then " \
 			"setenv bootarg_rootpart 2; " \
-		"else if test \"${defaultrootpart}\" = \"3\" ; then " \
+		"if test \"${defaultrootpart}\" = \"3\" ; then " \
 			"setenv bootarg_rootpart 3; " \
 		"fi\0" \
 	"set_rootpart_from_onetimerootpart=" \
 		"if test \"${onetimerootpart}\" = \"2\" ; then " \
 			"setenv bootarg_rootpart 2; " \
-		"else if test \"${onetimerootpart}\" = \"3\" ; then " \
+		"if test \"${onetimerootpart}\" = \"3\" ; then " \
 			"setenv bootarg_rootpart 3; " \
 		"fi\0" \
 	"sata_to_env_rootpart=" \
@@ -197,8 +197,8 @@
 	"system_get_ids=" \
 		"setenv loadaddr_flash ${loadaddr_flash_ids} && " \
 		"setenv filesize 1024 && " \
-		"run flash_to_ram &&" \
-		"env import -t ${loadaddr_ram} ${filesize} serialnum ethaddr eth1addr eth2addr eth3add\0" \
+		"run flash_to_ram && " \
+		"env import -t ${loadaddr_ram} ${filesize} serialnum ethaddr eth1addr eth2addr eth3addr\0" \
 	"system_load=" \
 		"run system_set_ids && " \
 		"if run sdcard_to_flash_pbl && run sdcard_to_flash_fib; then " \
