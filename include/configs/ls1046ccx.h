@@ -62,11 +62,11 @@
 	"crypto_set_key=" \
 		"setenv _key_addr ${loadaddr_ram_key} && " \
 		"mw.l ${_key_addr} 0x00000000 && " \
-		"setexpr ${_key_addr} ${_key_addr} + 0x4 && " \
+		"setexpr _key_addr ${_key_addr} + 0x4 && " \
 		"mw.l ${_key_addr} 0x00000000 && " \
-		"setexpr ${_key_addr} ${_key_addr} + 0x4 && " \
+		"setexpr _key_addr ${_key_addr} + 0x4 && " \
 		"mw.l ${_key_addr} 0x00000000 && " \
-		"setexpr ${_key_addr} ${_key_addr} + 0x4 && " \
+		"setexpr _key_addr ${_key_addr} + 0x4 && " \
 		"mw.l ${_key_addr} 0x00000000\0" \
 	"crypto_encrypt=" \
 		"run crypto_set_key && " \
@@ -74,8 +74,8 @@
 		"setexpr filesize ${filesize} + 0x30\0" \
 	"crypto_decrypt=" \
 		"run crypto_set_key && " \
-		"blob dec ${loadaddr_ram_enc} ${loadaddr_ram_dec} ${filesize} ${loadaddr_ram_key} && " \
-		"setexpr filesize ${filesize} - 0x30\0" \
+		"setexpr filesize ${filesize} - 0x30 &&" \
+		"blob dec ${loadaddr_ram_enc} ${loadaddr_ram_dec} ${filesize} ${loadaddr_ram_key}\0" \
 	"hwconfig=fsl_ddr:bank_intlv=auto\0" \
 	"bootargs=earlycon=uart8250,mmio,0x21c0500 console=ttyS0,115200\0" \
 	"bootargs_enable_loader=setenv bootargs ${bootargs} loader\0" \
@@ -84,8 +84,8 @@
 	"bootargs_set_ccx=setenv bootargs ${bootargs} ccx.serialnum=\"${serialnum}\"\0" \
 	"bootarg_rootpart=2\0" \
 	"loadaddr_ram=0xa0000000\0" \
-	"loadaddr_ram_dec=0xa0000000\0" \
-	"loadaddr_ram_enc=0xa0a00000\0" \
+	"loadaddr_ram_dec=0xa0400000\0" \
+	"loadaddr_ram_enc=0xa0800000\0" \
 	"loadaddr_flash=0x0\0" \
 	"loadaddr_flash_bl2=0x000000\0" \
 	"loadaddr_flash_fip=0x100000\0" \
@@ -191,14 +191,19 @@
 		"askenv eth1addr \"Enter MAC Address 2 [xx:xx:xx:xx:xx:xx], ie. 84:8B:CD:20:00:C9 => \" 17 && " \
 		"askenv eth2addr \"Enter MAC Address 3 [xx:xx:xx:xx:xx:xx], ie. 84:8B:CD:20:00:CA => \" 17 && " \
 		"askenv eth3addr \"Enter MAC Address 4 [xx:xx:xx:xx:xx:xx], ie. 84:8B:CD:20:00:CB => \" 17 && " \
-		"env export -t ${loadaddr_ram} serialnum ethaddr eth1addr eth2addr eth3addr && " \
+		"env export -t ${loadaddr_ram_dec} serialnum ethaddr eth1addr eth2addr eth3addr && " \
+		"setenv filesize 0x3d0 && " \
+		"run crypto_encrypt && " \
+		"setenv loadaddr_ram ${loadaddr_ram_enc} && " \
 		"setenv loadaddr_flash ${loadaddr_flash_ids} && " \
 		"run ram_to_flash\0" \
 	"system_get_ids=" \
+		"setenv loadaddr_ram ${loadaddr_ram_enc} && " \
 		"setenv loadaddr_flash ${loadaddr_flash_ids} && " \
-		"setenv filesize 1024 && " \
+		"setenv filesize 0x400 && " \
 		"run flash_to_ram && " \
-		"env import -t ${loadaddr_ram} ${filesize} serialnum ethaddr eth1addr eth2addr eth3addr\0" \
+		"run crypto_decrypt && " \
+		"env import -t ${loadaddr_ram_dec} ${filesize} serialnum ethaddr eth1addr eth2addr eth3addr\0" \
 	"system_load=" \
 		"run system_set_ids && " \
 		"if run sdcard_to_flash_pbl && run sdcard_to_flash_fib; then " \
