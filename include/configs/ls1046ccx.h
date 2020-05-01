@@ -134,12 +134,14 @@
 	"set_rootpart_from_defaultrootpart=" \
 		"if test \"${defaultrootpart}\" = \"2\" ; then " \
 			"setenv bootarg_rootpart 2; " \
+		"fi; " \
 		"if test \"${defaultrootpart}\" = \"3\" ; then " \
 			"setenv bootarg_rootpart 3; " \
 		"fi\0" \
 	"set_rootpart_from_onetimerootpart=" \
 		"if test \"${onetimerootpart}\" = \"2\" ; then " \
 			"setenv bootarg_rootpart 2; " \
+		"fi; " \
 		"if test \"${onetimerootpart}\" = \"3\" ; then " \
 			"setenv bootarg_rootpart 3; " \
 		"fi\0" \
