@@ -149,14 +149,12 @@
 		"setenv filename ${filename_onetimeenv} && " \
 		"if run sata_to_ram; then " \
 			"env import -t ${loadaddr_ram} ${filesize} lastboot defaultrootpart onetimerootpart; " \
-		"else " \
-			"true; " \
-		"fi && " \
+		"fi; " \
 		"if env exists defaultrootpart; then "\
 			"run set_rootpart_from_defaultrootpart; " \
 		"else " \
 			"setenv defaultrootpart ${bootarg_rootpart}; " \
-		"fi && " \
+		"fi; " \
 		"if env exists onetimerootpart; then " \
 			"run set_rootpart_from_onetimerootpart; " \
 		"else " \
@@ -215,11 +213,11 @@
 		"fi\0" \
 	"system_boot=" \
 		"run system_get_ids; " \
-		"if scsi rescan && run sata_to_env_rootpart && run env_to_sata_rootpart; then " \
-			"run boot_kernel_sata; esbc_halt; " \
-		"else " \
-			"echo Failed to setup environment && esbc_halt; " \
-		"fi\0" \
+		"scsi rescan; " \
+		"run sata_to_env_rootpart; " \
+		"run env_to_sata_rootpart; " \
+		"run boot_kernel_sata; " \
+		"esbc_halt;\0" \
 
 #include <asm/fsl_secure_boot.h>
 
