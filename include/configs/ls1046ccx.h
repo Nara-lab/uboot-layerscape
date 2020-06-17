@@ -74,8 +74,16 @@
 		"setexpr filesize ${filesize} + 0x30\0" \
 	"crypto_decrypt=" \
 		"run crypto_set_key && " \
-		"setexpr filesize ${filesize} - 0x30 &&" \
+		"setexpr filesize ${filesize} - 0x30 && " \
 		"blob dec ${loadaddr_ram_enc} ${loadaddr_ram_dec} ${filesize} ${loadaddr_ram_key}\0" \
+	"crypto_verify_kernel=" \
+		"run sata_to_ram_kernel_sig && " \
+		"esbc_validate ${loadaddr_ram_kernel_header} ${crypto_key_kernel\0" \
+	"crypto_verify_dtb=" \
+		"run sata_to_ram_dtb_sig && " \
+		"esbc_validate ${loadaddr_ram_dtb_header} ${crypto_key_dtb}\0" \
+	"crypto_key_kernel=\0" \
+	"crypto_key_dtb=\0" \
 	"hwconfig=fsl_ddr:bank_intlv=auto\0" \
 	"bootargs=earlycon=uart8250,mmio,0x21c0500 console=ttyS0,115200\0" \
 	"bootargs_enable_loader=setenv bootargs ${bootargs} loader\0" \
@@ -93,6 +101,8 @@
 	"loadaddr_ram_kernel=0xa0800000\0" \
 	"loadaddr_ram_dtb=0xa0000000\0" \
 	"loadaddr_ram_key=0x87000000\0" \
+	"loadaddr_ram_kernel_header=0x80200000\0" \
+	"loadaddr_ram_dtb_header=0x80100000\0" \
 	"filename_onetimeenv=uEnv.onetime.txt\0" \
 	"ram_to_flash=" \
 		"sf probe && " \
@@ -130,6 +140,14 @@
 	"sata_to_ram_kernel=" \
 		"setenv filename boot-${bootarg_rootpart}/Image && " \
 		"setenv loadaddr_ram ${loadaddr_ram_kernel} && " \
+		"run sata_to_ram\0" \
+	"sata_to_ram_dtb_sig=" \
+		"setenv filename boot-${bootarg_rootpart}/linux.dtb.sig && " \
+		"setenv loadaddr_ram ${loadaddr_ram_dtb_header} && " \
+		"run sata_to_ram\0" \
+	"sata_to_ram_kernel_sig=" \
+		"setenv filename boot-${bootarg_rootpart}/Image.sig && " \
+		"setenv loadaddr_ram ${loadaddr_ram_kernel_header} && " \
 		"run sata_to_ram\0" \
 	"set_rootpart_from_defaultrootpart=" \
 		"if test \"${defaultrootpart}\" = \"2\" ; then " \
@@ -183,7 +201,9 @@
 		"run bootargs_set_console && " \
 		"run bootargs_set_ccx && " \
 		"run sata_to_ram_dtb && " \
+		"run crypto_verify_dtb &&" \
 		"run sata_to_ram_kernel && " \
+		"run crypto_verify_kernel &&" \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
 	"system_set_ids=" \
 		"askenv serialnum \"Enter Serial Number [nnnn], ie. 1062 => \" 6 && " \
