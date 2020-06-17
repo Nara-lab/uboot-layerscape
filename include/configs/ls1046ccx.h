@@ -76,12 +76,8 @@
 		"run crypto_set_key && " \
 		"setexpr filesize ${filesize} - 0x30 && " \
 		"blob dec ${loadaddr_ram_enc} ${loadaddr_ram_dec} ${filesize} ${loadaddr_ram_key}\0" \
-	"crypto_verify_kernel=" \
-		"run sata_to_ram_kernel_sig && " \
-		"esbc_validate ${loadaddr_ram_kernel_header} ${crypto_key_kernel\0" \
-	"crypto_verify_dtb=" \
-		"run sata_to_ram_dtb_sig && " \
-		"esbc_validate ${loadaddr_ram_dtb_header} ${crypto_key_dtb}\0" \
+	"crypto_verify_kernel=esbc_validate ${loadaddr_ram_kernel_header} ${crypto_key_kernel\0" \
+	"crypto_verify_dtb=esbc_validate ${loadaddr_ram_dtb_header} ${crypto_key_dtb}\0" \
 	"crypto_key_kernel=\0" \
 	"crypto_key_dtb=\0" \
 	"hwconfig=fsl_ddr:bank_intlv=auto\0" \
@@ -132,6 +128,14 @@
 	"sdcard_to_ram_kernel=" \
 		"setenv filename Image && " \
 		"setenv loadaddr_ram ${loadaddr_ram_kernel} && " \
+		"run sdcard_to_ram\0" \
+	"sdcard_to_ram_dtb_sig=" \
+		"setenv filename linux.dtb.sig && " \
+		"setenv loadaddr_ram ${loadaddr_ram_dtb_header} && " \
+		"run sdcard_to_ram\0" \
+	"sdcard_to_ram_kernel_sig=" \
+		"setenv filename Image.sig && " \
+		"setenv loadaddr_ram ${loadaddr_ram_kernel_header} && " \
 		"run sdcard_to_ram\0" \
 	"sata_to_ram_dtb=" \
 		"setenv filename boot-${bootarg_rootpart}/linux.dtb && " \
@@ -194,15 +198,21 @@
 		"run bootargs_set_console && " \
 		"run bootargs_set_ccx && " \
 		"run sdcard_to_ram_dtb && " \
+		"run sdcard_to_ram_dtb_sig && " \
+		"run crypto_verify_dtb &&" \
 		"run sdcard_to_ram_kernel && " \
+		"run sdcard_to_ram_kernel_sig && " \
+		"run crypto_verify_kernel &&" \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
 	"boot_kernel_sata=" \
 		"run bootargs_set_rootfs && " \
 		"run bootargs_set_console && " \
 		"run bootargs_set_ccx && " \
 		"run sata_to_ram_dtb && " \
+		"run sata_to_ram_dtb_sig && " \
 		"run crypto_verify_dtb &&" \
 		"run sata_to_ram_kernel && " \
+		"run sata_to_ram_kernel_sig && " \
 		"run crypto_verify_kernel &&" \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
 	"system_set_ids=" \
