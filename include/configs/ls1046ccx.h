@@ -76,7 +76,7 @@
 		"run crypto_set_key && " \
 		"setexpr filesize ${filesize} - 0x30 && " \
 		"blob dec ${loadaddr_ram_enc} ${loadaddr_ram_dec} ${filesize} ${loadaddr_ram_key}\0" \
-	"crypto_verify_kernel=esbc_validate ${loadaddr_ram_kernel_header} ${crypto_key_kernel\0" \
+	"crypto_verify_kernel=esbc_validate ${loadaddr_ram_kernel_header} ${crypto_key_kernel}\0" \
 	"crypto_verify_dtb=esbc_validate ${loadaddr_ram_dtb_header} ${crypto_key_dtb}\0" \
 	"crypto_key_kernel=\0" \
 	"crypto_key_dtb=\0" \
@@ -199,10 +199,10 @@
 		"run bootargs_set_ccx && " \
 		"run sdcard_to_ram_dtb && " \
 		"run sdcard_to_ram_dtb_sig && " \
-		"run crypto_verify_dtb &&" \
+		"run crypto_verify_dtb && " \
 		"run sdcard_to_ram_kernel && " \
 		"run sdcard_to_ram_kernel_sig && " \
-		"run crypto_verify_kernel &&" \
+		"run crypto_verify_kernel && " \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
 	"boot_kernel_sata=" \
 		"run bootargs_set_rootfs && " \
@@ -210,10 +210,10 @@
 		"run bootargs_set_ccx && " \
 		"run sata_to_ram_dtb && " \
 		"run sata_to_ram_dtb_sig && " \
-		"run crypto_verify_dtb &&" \
+		"run crypto_verify_dtb && " \
 		"run sata_to_ram_kernel && " \
 		"run sata_to_ram_kernel_sig && " \
-		"run crypto_verify_kernel &&" \
+		"run crypto_verify_kernel && " \
 		"booti ${loadaddr_ram_kernel} - ${loadaddr_ram_dtb}\0" \
 	"system_set_ids=" \
 		"askenv serialnum \"Enter Serial Number [nnnn], ie. 1062 => \" 6 && " \
