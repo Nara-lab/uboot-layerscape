@@ -54,6 +54,17 @@ void config_floating_gpio_as_outputs(void)
 int pld_enable_reset_req(void)
 {
 	int err;
+	u32 rstrqsr1;
+
+	struct ccsr_gur *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	rstrqsr1 = in_be32(&gur->rstrqsr1);
+
+	printf("RSTRQSR1: 0x%x\n", rstrqsr1);
+	if (rstrqsr1) {
+		printf("WARNING: RESET_REQ_B is active, the processor will"
+		       " be reset as soon as the PLD is configured.\n");
+	}
+
 
 	/* enable the reset_req driven reset by programming
 	 * the GPIO Expander / PLD on IIC3 (Semtech SX1503) */
