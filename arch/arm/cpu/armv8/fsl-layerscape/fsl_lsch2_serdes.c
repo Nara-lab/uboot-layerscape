@@ -322,9 +322,7 @@ int setup_serdes_volt(u32 svdd)
 			reg = in_be32(&serdes1_base->bank[i].rstctl);
 			reg |= 0x20000000;
 			out_be32(&serdes1_base->bank[i].rstctl, reg);
-			printf("SerDes 1: Error, PLL %d failed to lock", i+1);
 		} else {
-			printf("SerDes 1: PLL %d locked", i+1);
 			udelay(1);
 			reg = in_be32(&serdes1_base->bank[i].rstctl);
 			reg &= 0xFFFFFFEF;
@@ -343,9 +341,7 @@ int setup_serdes_volt(u32 svdd)
 			reg = in_be32(&serdes2_base->bank[i].rstctl);
 			reg |= 0x20000000;
 			out_be32(&serdes2_base->bank[i].rstctl, reg);
-			printf("SerDes 2: Error, PLL %d failed to lock!", i+1);
 		} else {
-			printf("SerDes 1: PLL %d locked", i+1);
 			udelay(1);
 			reg = in_be32(&serdes2_base->bank[i].rstctl);
 			reg &= 0xFFFFFFEF;

@@ -54,15 +54,16 @@ void config_floating_gpio_as_outputs(void)
 int pld_enable_reset_req(void)
 {
 	int err;
-	u32 rstrqsr1;
+	u32 rstrqsr1, rstrqmr1;
 
 	struct ccsr_gur *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	rstrqmr1 = in_be32(&gur->rstrqmr1);
 	rstrqsr1 = in_be32(&gur->rstrqsr1);
 
-	printf("RSTRQSR1: 0x%x\n", rstrqsr1);
-	if (rstrqsr1) {
+	if (rstrqsr1 & (~rstrqmr1)) {
 		printf("WARNING: RESET_REQ_B is active, the processor will"
 		       " be reset as soon as the PLD is configured.\n");
+		printf("RSTRQSR1 & RSTRQSM1: 0x%08x\n", rstrqsr1 & (~rstrqmr1));
 	}
 
 
