@@ -190,7 +190,7 @@
 		"run bootargs_enable_loader && " \
 		"run boot_kernel_usb\0" \
 	"boot_kernel_usb=" \
-		"usb rescan && " \
+		"usb start && " \
 		"run bootargs_set_console && " \
 		"run bootargs_set_ccx && " \
 		"run usb_to_ram_dtb && " \
