@@ -310,3 +310,10 @@ U_BOOT_CMD(
 	"Flash bank Selection Control",
 	"bank[1-lower bank/2-upper bank] (e.g. boot_bank 1)"
 );
+
+#ifdef CONFIG_MISC_INIT_R
+int misc_init_r(void)
+{
+	return 0;
+}
+#endif

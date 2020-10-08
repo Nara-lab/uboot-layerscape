@@ -58,6 +58,7 @@
 
 #define SD_BOOTCOMMAND "run system_load"
 #define QSPI_NOR_BOOTCOMMAND "run system_boot"
+#undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"crypto_set_key=" \
 		"setenv _key_addr ${loadaddr_ram_key} && " \
