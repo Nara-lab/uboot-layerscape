@@ -56,7 +56,11 @@
 #endif
 #endif
 
+#if defined(CONFIG_FUSE_MESSAGE)
+#define SD_BOOTCOMMAND "run system_fuse"
+#else
 #define SD_BOOTCOMMAND "run system_load"
+#endif
 #define QSPI_NOR_BOOTCOMMAND "run system_boot"
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -249,6 +253,8 @@
 		"run env_to_sata_rootpart; " \
 		"run boot_kernel_sata; " \
 		"esbc_halt;\0" \
+	"system_fuse=" \
+		"echo !!! FUSES BURNED !!!\0"
 
 #include <asm/fsl_secure_boot.h>
 
