@@ -23,7 +23,7 @@
 	qflash0: s25fs064s@0 {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "spi-flash";
+		compatible = "jedec,spi-nor";
 		spi-max-frequency = <50000000>;
 		reg = <0>;
 	};
@@ -31,5 +31,13 @@
 };
 
 &sata {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+};
+
+&i2c3 {
 	status = "okay";
 };
