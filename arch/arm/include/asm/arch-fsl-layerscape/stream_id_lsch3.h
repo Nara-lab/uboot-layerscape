@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright 2015-2018 NXP
+ * Copyright 2015-2019 NXP
  * Copyright 2014 Freescale Semiconductor, Inc.
  *
  */
@@ -41,6 +41,10 @@
  *      for more info on the msi-map definition)
  *     -the MC is responsible for allocating and setting up 'isolation context
  *      IDs (ICIDs) based on the allocated stream IDs for all DPAA2 devices.
+ *
+ *  - ECAM (integrated PCI)
+ *     - U-Boot applies the value here to HW and does DT fix-up for both
+ *       'iommu-map' and 'msi-map'
  *
  * On Chasis-3 SoCs stream IDs are programmed in AMQ registers (32-bits) for
  * each of the different bus masters.  The relationship between
@@ -83,20 +87,22 @@
 /* PCI - programmed in PEXn_LUT */
 #define FSL_PEX_STREAM_ID_START		7
 
-#ifdef CONFIG_ARCH_LX2160A
-#define FSL_PEX_STREAM_ID_NUM		(0x100)
-#endif
-
 #if defined(CONFIG_ARCH_LS2080A) || defined(CONFIG_ARCH_LS1028A)
 #define FSL_PEX_STREAM_ID_END		22
 #elif defined(CONFIG_ARCH_LS1088A)
 #define FSL_PEX_STREAM_ID_END		18
+#elif defined(CONFIG_ARCH_LX2160A)
+#define FSL_PEX_STREAM_ID_END          (0x100)
 #endif
 
 
 /* DPAA2 - set in MC DPC and alloced by MC */
 #define FSL_DPAA2_STREAM_ID_START	23
 #define FSL_DPAA2_STREAM_ID_END		63
+
+/* PCI IEPs, this overlaps DPAA2 but these two are exclusive at least for now */
+#define FSL_ECAM_STREAM_ID_START	32
+#define FSL_ECAM_STREAM_ID_END		63
 
 #define FSL_SEC_STREAM_ID		64
 #define FSL_SEC_JR1_STREAM_ID		65
@@ -106,20 +112,24 @@
 
 #define FSL_SDMMC2_STREAM_ID		69
 
-#ifdef CONFIG_ARCH_LS1028A
 /*
- * On these chips the EDMA StreamID cannot be set to an arbitrary value as it
- * has bits 4 and 6 always set to 1. Redefine the StreamID value to match
- * this limitation. Note that StreamID 0x28 is from the DPAA2 range of
- * StreamIDs and since there's no DPAA2 on this chip we can safely use the
- * value.
+ * Erratum A-050382 workaround
+ *
+ * Description:
+ *   The eDMA ICID programmed in the eDMA_AMQR register in DCFG is not
+ *   correctly forwarded to the SMMU.
+ * Workaround:
+ *   Program eDMA ICID in the eDMA_AMQR register in DCFG to 40.
  */
-#define FSL_EDMA_STREAM_ID 		40
+#ifdef CONFIG_SYS_FSL_ERRATUM_A050382
+#define FSL_EDMA_STREAM_ID		40
 #else
 #define FSL_EDMA_STREAM_ID		70
 #endif
 
 #define FSL_GPU_STREAM_ID		71
 #define FSL_DISPLAY_STREAM_ID		72
+#define FSL_SATA3_STREAM_ID		73
+#define FSL_SATA4_STREAM_ID		74
 
 #endif

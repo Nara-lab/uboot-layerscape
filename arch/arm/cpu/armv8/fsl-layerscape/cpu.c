@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <env.h>
 #include <fsl_ddr_sdram.h>
 #include <asm/io.h>
 #include <linux/errno.h>
@@ -32,7 +33,7 @@
 #include <fsl_qbman.h>
 
 #ifdef CONFIG_TFABOOT
-#include <environment.h>
+#include <env_internal.h>
 #ifdef CONFIG_CHAIN_OF_TRUST
 #include <fsl_validate.h>
 #endif
@@ -361,11 +362,13 @@ static struct mm_region final_map[] = {
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 	  PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
+#ifdef CONFIG_SYS_PCIE3_PHYS_ADDR
 	{ CONFIG_SYS_PCIE3_PHYS_ADDR, CONFIG_SYS_PCIE3_PHYS_ADDR,
 	  CONFIG_SYS_PCIE3_PHYS_SIZE,
 	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 	  PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	},
+#endif
 	{ CONFIG_SYS_FSL_DRAM_BASE3, CONFIG_SYS_FSL_DRAM_BASE3,
 	  CONFIG_SYS_FSL_DRAM_SIZE3,
 	  PTE_BLOCK_MEMTYPE(MT_NORMAL) |
@@ -408,7 +411,7 @@ void cpu_name(char *name)
 		strcpy(name, "unknown");
 }
 
-#ifndef CONFIG_SYS_DCACHE_OFF
+#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
 /*
  * To start MMU before DDR is available, we create MMU table in SRAM.
  * The base address of SRAM is CONFIG_SYS_FSL_OCRAM_BASE. We use three
@@ -468,16 +471,20 @@ static void fix_pcie_mmu_map(void)
 				final_map[i].virt = 0x2800000000ULL;
 				final_map[i].size = 0x800000000ULL;
 				break;
+#ifdef CONFIG_SYS_PCIE3_PHYS_ADDR
 			case CONFIG_SYS_PCIE3_PHYS_ADDR:
 				final_map[i].phys = 0x3000000000ULL;
 				final_map[i].virt = 0x3000000000ULL;
 				final_map[i].size = 0x800000000ULL;
 				break;
+#endif
+#ifdef CONFIG_SYS_PCIE4_PHYS_ADDR
 			case CONFIG_SYS_PCIE4_PHYS_ADDR:
 				final_map[i].phys = 0x3800000000ULL;
 				final_map[i].virt = 0x3800000000ULL;
 				final_map[i].size = 0x800000000ULL;
 				break;
+#endif
 			default:
 				break;
 			}
@@ -631,7 +638,7 @@ void enable_caches(void)
 	icache_enable();
 	dcache_enable();
 }
-#endif	/* CONFIG_SYS_DCACHE_OFF */
+#endif	/* !CONFIG_IS_ENABLED(SYS_DCACHE_OFF) */
 
 #ifdef CONFIG_TFABOOT
 enum boot_src __get_boot_src(u32 porsr1)
@@ -1089,6 +1096,12 @@ static void config_core_prefetch(void)
 	}
 }
 
+#ifdef CONFIG_PCIE_ECAM_GENERIC
+__weak void set_ecam_icids(void)
+{
+}
+#endif
+
 int arch_early_init_r(void)
 {
 #ifdef CONFIG_SYS_FSL_ERRATUM_A009635
@@ -1140,6 +1153,9 @@ int arch_early_init_r(void)
 #endif
 #ifdef CONFIG_SYS_DPAA_QBMAN
 	setup_qbman_portals();
+#endif
+#ifdef CONFIG_PCIE_ECAM_GENERIC
+	set_ecam_icids();
 #endif
 	return 0;
 }

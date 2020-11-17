@@ -11,7 +11,7 @@
 #include "fsl-sch-30841.dtsi"
 };
 
-&ethsw {
+&ethsw_ports {
 	port@0 {
 		status = "okay";
 		phy-mode = "sgmii-2500";

@@ -19,7 +19,7 @@
 	#include "fsl-sch-24801.dtsi"
 };
 
-&ethsw {
+&ethsw_ports {
 	port@0 {
 		status = "okay";
 		phy-mode = "sgmii";

@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <env.h>
 #include <fsl_immap.h>
 #include <fsl_ifc.h>
 #include <asm/arch/fsl_serdes.h>
@@ -26,7 +27,7 @@
 #endif
 #include <fsl_immap.h>
 #ifdef CONFIG_TFABOOT
-#include <environment.h>
+#include <env_internal.h>
 DECLARE_GLOBAL_DATA_PTR;
 #endif
 
@@ -145,7 +146,7 @@ static void erratum_a008997(void)
 	out_be16((phy) + SCFG_USB_PHY_RX_OVRD_IN_HI, USB_PHY_RX_EQ_VAL_4)
 
 #elif defined(CONFIG_ARCH_LS2080A) || defined(CONFIG_ARCH_LS1088A) || \
-	defined(CONFIG_ARCH_LX2160A) || defined(CONFIG_ARCH_LS1028A)
+	defined(CONFIG_ARCH_LS1028A) || defined(CONFIG_ARCH_LX2160A)
 
 #define PROGRAM_USB_PHY_RX_OVRD_IN_HI(phy)	\
 	out_le16((phy) + DCSR_USB_PHY_RX_OVRD_IN_HI, USB_PHY_RX_EQ_VAL_1); \
@@ -350,7 +351,8 @@ void fsl_lsch3_early_init_f(void)
 		bypass_smmu();
 #endif
 
-#if defined(CONFIG_ARCH_LS1088A) || defined(CONFIG_ARCH_LS1028A)
+#if defined(CONFIG_ARCH_LS1088A) || defined(CONFIG_ARCH_LS1028A) || \
+	defined(CONFIG_ARCH_LS2080A) || defined(CONFIG_ARCH_LX2160A)
 	set_icids();
 #endif
 }
@@ -614,7 +616,7 @@ void fsl_lsch2_early_init_f(void)
 	struct ccsr_cci400 *cci = (struct ccsr_cci400 *)(CONFIG_SYS_IMMR +
 					CONFIG_SYS_CCI400_OFFSET);
 	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
-#ifdef CONFIG_TFABOOT
+#if defined(CONFIG_FSL_QSPI) && defined(CONFIG_TFABOOT)
 	enum boot_src src;
 #endif
 
@@ -642,6 +644,11 @@ void fsl_lsch2_early_init_f(void)
 			SCFG_SNPCNFGCR_USB1WRSNP | SCFG_SNPCNFGCR_USB2RDSNP |
 			SCFG_SNPCNFGCR_USB2WRSNP | SCFG_SNPCNFGCR_USB3RDSNP |
 			SCFG_SNPCNFGCR_USB3WRSNP | SCFG_SNPCNFGCR_SATARDSNP |
+			SCFG_SNPCNFGCR_SATAWRSNP);
+#elif defined(CONFIG_ARCH_LS1012A)
+	setbits_be32(&scfg->snpcnfgcr, SCFG_SNPCNFGCR_SECRDSNP |
+			SCFG_SNPCNFGCR_SECWRSNP | SCFG_SNPCNFGCR_USB1RDSNP |
+			SCFG_SNPCNFGCR_USB1WRSNP | SCFG_SNPCNFGCR_SATARDSNP |
 			SCFG_SNPCNFGCR_SATAWRSNP);
 #else
 	setbits_be32(&scfg->snpcnfgcr, SCFG_SNPCNFGCR_SECRDSNP |

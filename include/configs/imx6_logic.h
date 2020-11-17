@@ -46,11 +46,11 @@
 	"finduuid=part uuid mmc ${mmcdev}:2 uuid\0" \
 	"nandroot=ubi0:rootfs rootfstype=ubifs\0" \
 	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-	" root=PARTUUID=${uuid} rootwait rw\0 ${mtdparts}\0" \
+	" root=PARTUUID=${uuid} rootwait rw ${mtdparts} ${optargs}\0" \
 	"nandargs=setenv bootargs console=${console},${baudrate}" \
-	" ubi.mtd=fs root=${nandroot} ${mtdparts}\0" \
+	" ubi.mtd=fs root=${nandroot} ${mtdparts} ${optargs}\0" \
 	"ramargs=setenv bootargs console=${console},${baudrate}" \
-	" root=/dev/ram rw ${mtdparts}\0"                    \
+	" root=/dev/ram rw ${mtdparts} ${optargs}\0"                    \
 	"loadbootscript=" \
 	"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...;" \
@@ -144,7 +144,6 @@
 #define CONFIG_SYS_NAND_U_BOOT_START	CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x200000
 #define CONFIG_SYS_NAND_SPL_KERNEL_OFFS 0x00500000
-#define CONFIG_SYS_NAND_USE_FLASH_BBT
 
 /* MTD device */
 

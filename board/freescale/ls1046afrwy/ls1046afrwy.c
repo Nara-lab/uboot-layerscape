@@ -18,7 +18,6 @@
 #include <fm_eth.h>
 #include <fsl_csu.h>
 #include <fsl_esdhc.h>
-#include <power/mc34vr500_pmic.h>
 #include <fsl_sec.h>
 #include <fsl_dspi.h>
 
@@ -26,6 +25,7 @@
 #define BOOT_SRC_SD        0x20000000
 #define BOOT_SRC_MASK	   0xFF800000
 #define BOARD_REV_GPIO_SHIFT	17
+#define BOARD_REV_MASK     0x03
 #define USB2_SEL_MASK	   0x00000100
 
 #define BYTE_SWAP_32(word)  ((((word) & 0xff000000) >> 24) |  \
@@ -36,11 +36,24 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-int select_i2c_ch_pca9547(u8 ch)
+int select_i2c_ch_pca9547(u8 ch, int bus_num)
 {
 	int ret;
 
+#ifdef CONFIG_DM_I2C
+	struct udevice *dev;
+
+	ret = i2c_get_chip_for_busnum(bus_num, I2C_MUX_PCA_ADDR_PRI,
+				      1, &dev);
+	if (ret) {
+		printf("%s: Cannot find udev for a bus %d\n", __func__,
+		       bus_num);
+		return ret;
+	}
+	ret = dm_i2c_write(dev, 0, &ch, 1);
+#else
 	ret = i2c_write(I2C_MUX_PCA_ADDR_PRI, 0, 1, &ch, 1);
+#endif
 	if (ret) {
 		puts("PCA: failed to select proper channel\n");
 		return ret;
@@ -86,19 +99,16 @@ int board_early_init_f(void)
 	return 0;
 }
 
-#ifndef CONFIG_SPL_BUILD
 static inline uint8_t get_board_version(void)
 {
-	u8 val;
-	u32 gpio_val;
 	struct ccsr_gpio *pgpio = (void *)(GPIO2_BASE_ADDR);
 
-	/* GPIO 13 and GPIo 14 are use for Board Rev */
-	/* shift 31-14=17 position right and extract two bit info */
-	gpio_val = (in_be32(&pgpio->gpdat) >> BOARD_REV_GPIO_SHIFT);
+	/* GPIO 13 and GPIO 14 are used for Board Rev */
+	u32 gpio_val = ((in_be32(&pgpio->gpdat) >> BOARD_REV_GPIO_SHIFT))
+				& BOARD_REV_MASK;
 
-	/* GPIO's are 0..31 in Big Endiness, swap GPIO 13 and GPIO 14 */
-	val = ((gpio_val >> 1) | (gpio_val << 1)) & 0x03;
+	/* GPIOs' are 0..31 in Big Endiness, swap GPIO 13 and GPIO 14 */
+	u8 val = ((gpio_val >> 1) | (gpio_val << 1)) & BOARD_REV_MASK;
 
 	return val;
 }
@@ -152,35 +162,12 @@ val = (in_le32(SMMU_SCR0) | SCR0_CLIENTPD_MASK) & ~(SCR0_USFCFG_MASK);
 	sec_init();
 #endif
 
-	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT);
+	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT, 0);
 	return 0;
 }
 
 int board_setup_core_volt(u32 vdd)
 {
-	return 0;
-}
-
-int get_serdes_volt(void)
-{
-	return mc34vr500_get_sw_volt(SW4);
-}
-
-int set_serdes_volt(int svdd)
-{
-	return mc34vr500_set_sw_volt(SW4, svdd);
-}
-
-int power_init_board(void)
-{
-	int ret;
-
-	ret = power_mc34vr500_init(0);
-	if (ret)
-		return ret;
-
-	setup_chip_volt();
-
 	return 0;
 }
 
@@ -252,4 +239,3 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	return 0;
 }
-#endif

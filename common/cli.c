@@ -12,6 +12,7 @@
 #include <cli.h>
 #include <cli_hush.h>
 #include <console.h>
+#include <env.h>
 #include <fdtdec.h>
 #include <malloc.h>
 
@@ -213,6 +214,7 @@ err:
 
 void cli_loop(void)
 {
+	bootstage_mark(BOOTSTAGE_ID_ENTER_CLI_LOOP);
 #ifdef CONFIG_HUSH_PARSER
 	parse_file_outer();
 	/* This point is never reached */

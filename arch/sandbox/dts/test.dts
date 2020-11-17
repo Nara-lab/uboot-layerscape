@@ -40,6 +40,10 @@
 		usb2 = &usb_2;
 		axi0 = &axi;
 		osd0 = "/osd";
+		eth8 = &swp_0;
+		eth9 = &swp_1;
+		eth10 = &swp_2;
+		eth11 = &dsa_eth0;
 	};
 
 	audio: audio-codec {
@@ -211,6 +215,12 @@
 			clock-mult = <2>;
 			clocks = <&clk_fixed>;
 		};
+
+		osc {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <20000000>;
+		};
 	};
 
 	clk_sandbox: clk-sbox {
@@ -224,6 +234,10 @@
 			 <&clk_sandbox 1>,
 			 <&clk_sandbox 0>;
 		clock-names = "fixed", "i2c", "spi";
+	};
+
+	ccf: clk-ccf {
+		compatible = "sandbox,clk-ccf";
 	};
 
 	eth@10002000 {
@@ -400,6 +414,18 @@
 		sandbox,silent;	/* Don't emit sounds while testing */
 	};
 
+	nop-test_0 {
+		compatible = "sandbox,nop_sandbox1";
+		nop-test_1 {
+			compatible = "sandbox,nop_sandbox2";
+			bind = "True";
+		};
+		nop-test_2 {
+			compatible = "sandbox,nop_sandbox2";
+			bind = "False";
+		};
+	};
+
 	misc-test {
 		compatible = "sandbox,misc_sandbox";
 	};
@@ -483,6 +509,10 @@
 		};
 	};
 
+	pci_ep: pci_ep {
+		compatible = "sandbox,pci_ep";
+	};
+
 	probing {
 		compatible = "simple-bus";
 		test1 {
@@ -501,6 +531,7 @@
 			compatible = "denx,u-boot-probe-test";
 			first-syscon = <&syscon0>;
 			second-sys-ctrl = <&another_system_controller>;
+			third-syscon = <&syscon2>;
 		};
 	};
 
@@ -586,7 +617,7 @@
 		cs-gpios = <0>, <&gpio_a 0>;
 		spi.bin@0 {
 			reg = <0>;
-			compatible = "spansion,m25p16", "spi-flash";
+			compatible = "spansion,m25p16", "jedec,spi-nor";
 			spi-max-frequency = <40000000>;
 			sandbox,filename = "spi.bin";
 		};
@@ -605,7 +636,7 @@
 			0x38 8>;
 	};
 
-	syscon@2 {
+	syscon2: syscon@2 {
 		compatible = "simple-mfd", "syscon";
 		reg = <0x40 5
 			0x48 6
@@ -739,6 +770,10 @@
 			  3 0x300 0xB000 0x1000
 			 >;
 
+		dma-ranges = <0 0x000 0x10000000 0x1000
+			      1 0x100 0x20000000 0x1000
+			     >;
+
 		dev@0,0 {
 			compatible = "denx,u-boot-fdt-dummy";
 			reg = <0 0x0 0x1000>;
@@ -830,6 +865,51 @@
 
 	mdio: mdio-test {
 		compatible = "sandbox,mdio";
+	};
+
+	dsa_eth0: dsa-test-eth {
+		compatible = "sandbox,dsa-eth";
+	};
+
+	dsa-test {
+		compatible = "sandbox,dsa";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			swp_0: port@0 {
+				reg = <0>;
+				label = "lan0";
+			};
+
+			swp_1: port@1 {
+				reg = <1>;
+				label = "lan1";
+				phy-mode = "rgmii-txid";
+				fixed-link {
+					speed = <1000>;
+					full-duplex;
+				};
+			};
+
+			swp_2: port@2 {
+				reg = <2>;
+				label = "lan2";
+				fixed-link {
+					speed = <100>;
+					full-duplex;
+				};
+			};
+
+			port@3 {
+				reg = <3>;
+				ethernet = <&dsa_eth0>;
+				fixed-link {
+					speed = <100>;
+					full-duplex;
+				};
+			};
+		};
 	};
 };
 

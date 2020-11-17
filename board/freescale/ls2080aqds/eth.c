@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- * Copyright 2019 NXP
  */
 
 #include <common.h>
+#include <env.h>
 #include <netdev.h>
 #include <asm/io.h>
 #include <asm/arch/fsl_serdes.h>
@@ -90,11 +90,16 @@ struct ls2080a_qds_mdio {
 	struct mii_dev *realbus;
 };
 
+struct reg_pair {
+	uint addr;
+	u8 *val;
+};
+
 static void sgmii_configure_repeater(int serdes_port)
 {
 	struct mii_dev *bus;
 	uint8_t a = 0xf;
-	int i, j, ret;
+	int i, j, k, ret;
 	int dpmac_id = 0, dpmac, mii_bus = 0;
 	unsigned short value;
 	char dev[2][20] = {"LS2080A_QDS_MDIO0", "LS2080A_QDS_MDIO3"};
@@ -104,6 +109,15 @@ static void sgmii_configure_repeater(int serdes_port)
 	uint8_t ch_a_ctl2[] = {0x81, 0x82, 0x83, 0x84};
 	uint8_t ch_b_eq[] = {0x1, 0x2, 0x3, 0x7};
 	uint8_t ch_b_ctl2[] = {0x81, 0x82, 0x83, 0x84};
+
+	u8 reg_val[6] = {0x18, 0x38, 0x4, 0x14, 0xb5, 0x20};
+	struct reg_pair reg_pair[10] = {
+			{6, &reg_val[0]}, {4, &reg_val[1]},
+			{8, &reg_val[2]}, {0xf, NULL},
+			{0x11, NULL}, {0x16, NULL},
+			{0x18, NULL}, {0x23, &reg_val[3]},
+			{0x2d, &reg_val[4]}, {4, &reg_val[5]},
+	};
 
 	int *riser_phy_addr = &xqsgii_riser_phy_addr[0];
 #ifdef CONFIG_DM_I2C
@@ -173,102 +187,29 @@ static void sgmii_configure_repeater(int serdes_port)
 
 		for (i = 0; i < 4; i++) {
 			for (j = 0; j < 4; j++) {
+				reg_pair[3].val = &ch_a_eq[i];
+				reg_pair[4].val = &ch_a_ctl2[j];
+				reg_pair[5].val = &ch_b_eq[i];
+				reg_pair[6].val = &ch_b_ctl2[j];
+
+				for (k = 0; k < 10; k++) {
 #ifndef CONFIG_DM_I2C
-				a = 0x18;
-				ret = i2c_write(i2c_addr[dpmac], 6, 1, &a, 1);
-				if (ret)
-					goto error;
-				a = 0x38;
-				ret = i2c_write(i2c_addr[dpmac], 4, 1, &a, 1);
-				if (ret)
-					goto error;
-				a = 0x4;
-				ret = i2c_write(i2c_addr[dpmac], 8, 1, &a, 1);
-				if (ret)
-					goto error;
-
-				ret = i2c_write(i2c_addr[dpmac], 0xf,
-						1, &ch_a_eq[i], 1);
-				if (ret)
-					goto error;
-				ret = i2c_write(i2c_addr[dpmac], 0x11,
-						1, &ch_a_ctl2[j], 1);
-				if (ret)
-					goto error;
-
-				ret = i2c_write(i2c_addr[dpmac], 0x16,
-						1, &ch_b_eq[i], 1);
-				if (ret)
-					goto error;
-				ret = i2c_write(i2c_addr[dpmac], 0x18,
-						1, &ch_b_ctl2[j], 1);
-				if (ret)
-					goto error;
-
-				a = 0x14;
-				ret = i2c_write(i2c_addr[dpmac],
-						0x23, 1, &a, 1);
-				if (ret)
-					goto error;
-				a = 0xb5;
-				ret = i2c_write(i2c_addr[dpmac],
-						0x2d, 1, &a, 1);
-				if (ret)
-					goto error;
-				a = 0x20;
-				ret = i2c_write(i2c_addr[dpmac], 4, 1, &a, 1);
-				if (ret)
-					goto error;
+					ret = i2c_write(i2c_addr[dpmac],
+							reg_pair[k].addr,
+							1, reg_pair[k].val, 1);
 #else
-				ret = i2c_get_chip_for_busnum(0,
-							      i2c_addr[dpmac],
-							      1, &udev);
-				if (!ret) {
-					a = 0x18;
-					ret = dm_i2c_write(udev, 6, &a, 1);
-					if (ret)
-						goto error;
-					a = 0x38;
-					ret = dm_i2c_write(udev, 4, &a, 1);
-					if (ret)
-						goto error;
-					a = 0x4;
-					ret = dm_i2c_write(udev, 8, &a, 1);
-					if (ret)
-						goto error;
-
-					ret = dm_i2c_write(udev, 0xf,
-							   &ch_a_eq[i], 1);
-					if (ret)
-						goto error;
-					ret = dm_i2c_write(udev, 0x11,
-							   &ch_a_ctl2[j], 1);
-					if (ret)
-						goto error;
-
-					ret = dm_i2c_write(udev, 0x16,
-							   &ch_b_eq[i], 1);
-					if (ret)
-						goto error;
-					ret = dm_i2c_write(udev, 0x18,
-							   &ch_b_ctl2[j], 1);
-					if (ret)
-						goto error;
-					a = 0x14;
-					ret = dm_i2c_write(udev, 0x23, &a, 1);
-					if (ret)
-						goto error;
-					a = 0xb5;
-					ret = dm_i2c_write(udev, 0x2d, &a, 1);
-					if (ret)
-						goto error;
-					a = 0x20;
-					ret = dm_i2c_write(udev, 4, &a, 1);
+					ret = i2c_get_chip_for_busnum(0,
+							    i2c_addr[dpmac],
+							    1, &udev);
+					if (!ret)
+						ret = dm_i2c_write(udev,
+							  reg_pair[k].addr,
+							  reg_pair[k].val, 1);
+#endif
 					if (ret)
 						goto error;
 				}
 
-#endif
 				mdelay(100);
 				ret = miiphy_read(dev[mii_bus],
 						  riser_phy_addr[dpmac],
@@ -309,7 +250,7 @@ error:
 static void qsgmii_configure_repeater(int dpmac)
 {
 	uint8_t a = 0xf;
-	int i, j;
+	int i, j, k;
 	int i2c_phy_addr = 0;
 	int phy_addr = 0;
 	int i2c_addr[] = {0x58, 0x59, 0x5a, 0x5b};
@@ -318,6 +259,15 @@ static void qsgmii_configure_repeater(int dpmac)
 	uint8_t ch_a_ctl2[] = {0x81, 0x82, 0x83, 0x84};
 	uint8_t ch_b_eq[] = {0x1, 0x2, 0x3, 0x7};
 	uint8_t ch_b_ctl2[] = {0x81, 0x82, 0x83, 0x84};
+
+	u8 reg_val[6] = {0x18, 0x38, 0x4, 0x14, 0xb5, 0x20};
+	struct reg_pair reg_pair[10] = {
+		{6, &reg_val[0]}, {4, &reg_val[1]},
+		{8, &reg_val[2]}, {0xf, NULL},
+		{0x11, NULL}, {0x16, NULL},
+		{0x18, NULL}, {0x23, &reg_val[3]},
+		{0x2d, &reg_val[4]}, {4, &reg_val[5]},
+	};
 
 	const char *dev = "LS2080A_QDS_MDIO0";
 	int ret = 0;
@@ -386,103 +336,28 @@ static void qsgmii_configure_repeater(int dpmac)
 
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
+			reg_pair[3].val = &ch_a_eq[i];
+			reg_pair[4].val = &ch_a_ctl2[j];
+			reg_pair[5].val = &ch_b_eq[i];
+			reg_pair[6].val = &ch_b_ctl2[j];
+
+			for (k = 0; k < 10; k++) {
 #ifndef CONFIG_DM_I2C
-			a = 0x18;
-			ret = i2c_write(i2c_phy_addr, 6, 1, &a, 1);
-			if (ret)
-				goto error;
-			a = 0x38;
-			ret = i2c_write(i2c_phy_addr, 4, 1, &a, 1);
-			if (ret)
-				goto error;
-			a = 0x4;
-			ret = i2c_write(i2c_phy_addr, 8, 1, &a, 1);
-			if (ret)
-				goto error;
-
-			ret = i2c_write(i2c_phy_addr, 0xf, 1, &ch_a_eq[i], 1);
-			if (ret)
-				goto error;
-			ret = i2c_write(i2c_phy_addr, 0x11, 1,
-					&ch_a_ctl2[j], 1);
-			if (ret)
-				goto error;
-
-			ret = i2c_write(i2c_phy_addr, 0x16, 1, &ch_b_eq[i], 1);
-			if (ret)
-				goto error;
-			ret = i2c_write(i2c_phy_addr, 0x18, 1,
-					&ch_b_ctl2[j], 1);
-			if (ret)
-				goto error;
-
-			a = 0x14;
-			ret = i2c_write(i2c_phy_addr, 0x23, 1, &a, 1);
-			if (ret)
-				goto error;
-			a = 0xb5;
-			ret = i2c_write(i2c_phy_addr, 0x2d, 1, &a, 1);
-			if (ret)
-				goto error;
-			a = 0x20;
-			ret = i2c_write(i2c_phy_addr, 4, 1, &a, 1);
-			if (ret)
-				goto error;
+				ret = i2c_write(i2c_phy_addr,
+						reg_pair[k].addr,
+						1, reg_pair[k].val, 1);
 #else
-			ret = i2c_get_chip_for_busnum(0,
-						      i2c_phy_addr,
-							  1, &udev);
-			if (!ret) {
-				a = 0x18;
-				ret = dm_i2c_write(udev, 6, &a, 1);
-				if (ret)
-					goto error;
-				a = 0x38;
-				ret = dm_i2c_write(udev, 4, &a, 1);
-				if (ret)
-					goto error;
-				a = 0x4;
-				ret = dm_i2c_write(udev, 8, &a, 1);
-				if (ret)
-					goto error;
-
-				ret = dm_i2c_write(udev, 0xf,
-						   &ch_a_eq[i],
-						   1);
-				if (ret)
-					goto error;
-				ret = dm_i2c_write(udev, 0x11,
-						   &ch_a_ctl2[j],
-						   1);
-				if (ret)
-					goto error;
-
-				ret = dm_i2c_write(udev, 0x16,
-						   &ch_b_eq[i],
-						   1);
-				if (ret)
-					goto error;
-				ret = dm_i2c_write(udev, 0x18,
-						   &ch_b_ctl2[j],
-						   1);
-				if (ret)
-					goto error;
-
-				a = 0x14;
-				ret = dm_i2c_write(udev, 0x23, &a, 1);
-				if (ret)
-					goto error;
-				a = 0xb5;
-				ret = dm_i2c_write(udev, 0x2d, &a, 1);
-				if (ret)
-					goto error;
-				a = 0x20;
-				ret = dm_i2c_write(udev, 4, &a, 1);
+				ret = i2c_get_chip_for_busnum(0,
+							      i2c_phy_addr,
+							      1, &udev);
+				if (!ret)
+					ret = dm_i2c_write(udev,
+							   reg_pair[k].addr,
+							   reg_pair[k].val, 1);
+#endif
 				if (ret)
 					goto error;
 			}
-
-#endif
 
 			mdelay(100);
 			ret = miiphy_read(dev, phy_addr, 0x11, &value);

@@ -2,9 +2,11 @@
 /*
  * NXP lx2160a SOC common device tree source
  *
- * Copyright 2018-2019 NXP
+ * Copyright 2018 NXP
  *
  */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
 
 / {
 	compatible = "fsl,lx2160a";
@@ -47,6 +49,19 @@
 			     <1 14 0x8>, /* Physical NS PPI, active-low */
 			     <1 11 0x8>, /* Virtual PPI, active-low */
 			     <1 10 0x8>; /* Hypervisor PPI, active-low */
+	};
+
+	fspi: flexspi@20c0000 {
+		compatible = "nxp,lx2160a-fspi";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x0 0x20c0000 0x0 0x10000>,
+			<0x0 0x20000000 0x0 0x10000000>;
+		reg-names = "fspi_base", "fspi_mmap";
+		clocks = <&clockgen 4 3>, <&clockgen 4 3>;
+		clock-names = "fspi_en", "fspi";
+		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+		status = "disabled";
 	};
 
 	i2c0: i2c@2000000 {
@@ -275,7 +290,7 @@
 		#size-cells = <2>;
 		device_type = "pci";
 		bus-range = <0x0 0xff>;
-		ranges = <0x82000000 0x0 0x40000000 0x80 0x40000000 0x0 0x40000000>; /* non-prefetchable memory */
+		ranges = <0x82000000 0x0 0x40000000 0x80 0x40000000 0x0 0x40000000>;
 	};
 
 	pcie@3500000 {
@@ -290,7 +305,7 @@
 		device_type = "pci";
 		num-lanes = <2>;
 		bus-range = <0x0 0xff>;
-		ranges = <0x82000000 0x0 0x40000000 0x88 0x40000000 0x0 0x40000000>; /* non-prefetchable memory */
+		ranges = <0x82000000 0x0 0x40000000 0x88 0x40000000 0x0 0x40000000>;
 	};
 
 	pcie@3600000 {
@@ -304,7 +319,7 @@
 		#size-cells = <2>;
 		device_type = "pci";
 		bus-range = <0x0 0xff>;
-		ranges = <0x82000000 0x0 0x40000000 0x90 0x40000000 0x0 0x40000000>; /* non-prefetchable memory */
+		ranges = <0x82000000 0x0 0x40000000 0x90 0x40000000 0x0 0x40000000>;
 	};
 
 	pcie@3700000 {
@@ -318,7 +333,7 @@
 		#size-cells = <2>;
 		device_type = "pci";
 		bus-range = <0x0 0xff>;
-		ranges = <0x82000000 0x0 0x40000000 0x98 0x40000000 0x0 0x40000000>; /* non-prefetchable memory */
+		ranges = <0x82000000 0x0 0x40000000 0x98 0x40000000 0x0 0x40000000>;
 	};
 
 	pcie@3800000 {
@@ -332,7 +347,7 @@
 		#size-cells = <2>;
 		device_type = "pci";
 		bus-range = <0x0 0xff>;
-		ranges = <0x82000000 0x0 0x40000000 0xa0 0x40000000 0x0 0x40000000>; /* non-prefetchable memory */
+		ranges = <0x82000000 0x0 0x40000000 0xa0 0x40000000 0x0 0x40000000>;
 	};
 
 	pcie@3900000 {
@@ -346,17 +361,6 @@
 		#size-cells = <2>;
 		device_type = "pci";
 		bus-range = <0x0 0xff>;
-		ranges = <0x82000000 0x0 0x40000000 0xa8 0x40000000 0x0 0x40000000>; /* non-prefetchable memory */
-	};
-
-	fspi: flexspi@20c0000 {
-		compatible = "nxp,dn-fspi";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x0 0x20C0000 0x0 0x10000>,
-			<0x0 0x20000000 0x0 0x10000000>; /* 256MB Region */
-		reg-names = "FSPI", "FSPI-memory";
-		num-cs = <4>;
-		status = "disabled";
+		ranges = <0x82000000 0x0 0x40000000 0xa8 0x40000000 0x0 0x40000000>;
 	};
 };

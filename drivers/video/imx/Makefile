@@ -1,8 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
-# Copyright 2018-2019 NXP
-#
-# SPDX-License-Identifier:      GPL-2.0+
-#
+# (C) Copyright 2000-2007
+# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
-UBOOTINCLUDE += -I$(srctree)/drivers/video/imx/hdp
-obj-$(CONFIG_VIDEO_IMX_HDP_LOAD) += hdp_load.o hdp/
+obj-y += mxc_ipuv3_fb.o ipu_common.o ipu_disp.o

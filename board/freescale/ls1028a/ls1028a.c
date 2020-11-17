@@ -11,7 +11,7 @@
 #include <hwconfig.h>
 #include <fdt_support.h>
 #include <linux/libfdt.h>
-#include <environment.h>
+#include <env_internal.h>
 #include <asm/arch-fsl-layerscape/soc.h>
 #include <asm/arch-fsl-layerscape/fsl_icid.h>
 #include <i2c.h>
@@ -31,6 +31,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 int config_board_mux(void)
 {
+#ifndef CONFIG_LPUART
 #if defined(CONFIG_TARGET_LS1028AQDS) && defined(CONFIG_FSL_QIXIS)
 	u8 reg;
 
@@ -55,8 +56,17 @@ int config_board_mux(void)
 	reg &= ~(0xc0);
 	QIXIS_WRITE(brdcfg[15], reg);
 #endif
+#endif
+
 	return 0;
 }
+
+#ifdef CONFIG_LPUART
+u32 get_lpuart_clk(void)
+{
+	return gd->bus_clk / CONFIG_SYS_FSL_LPUART_CLK_DIV;
+}
+#endif
 
 int board_init(void)
 {
@@ -87,20 +97,19 @@ int board_init(void)
 	if (!i2c_get_chip_for_busnum(0, I2C_MUX_PCA_ADDR_PRI, 1, &dev))
 		dm_i2c_write(dev, 0x0b, &val, 1);
 #endif
-
 #endif
 
 #if defined(CONFIG_TARGET_LS1028ARDB)
 	u8 reg;
 
 	reg = QIXIS_READ(brdcfg[4]);
-	/* Field| Function
+	/*
+	 * Field | Function
 	 * 3     | DisplayPort Power Enable (net DP_PWR_EN):
 	 * DPPWR | 0= DP_PWR is enabled.
 	 */
 	reg &= ~(DP_PWD_EN_DEFAULT_MASK);
 	QIXIS_WRITE(brdcfg[4], reg);
-
 #endif
 	return 0;
 }
@@ -121,11 +130,33 @@ int arch_misc_init(void)
 
 int board_early_init_f(void)
 {
+#ifdef CONFIG_LPUART
+	u8 uart;
+#endif
+
 #ifdef CONFIG_SYS_I2C_EARLY_INIT
 	i2c_early_init_f();
 #endif
 
 	fsl_lsch3_early_init_f();
+
+#ifdef CONFIG_LPUART
+	/*
+	 * Field| Function
+	 * --------------------------------------------------------------
+	 * 7-6  | Controls I2C3 routing (net CFG_MUX_I2C3):
+	 * I2C3 | 11= Routes {SCL, SDA} to LPUART1 header as {SOUT, SIN}.
+	 * --------------------------------------------------------------
+	 * 5-4  | Controls I2C4 routing (net CFG_MUX_I2C4):
+	 * I2C4 |11= Routes {SCL, SDA} to LPUART1 header as {CTS_B, RTS_B}.
+	 */
+	/* use lpuart0 as system console */
+	uart = QIXIS_READ(brdcfg[13]);
+	uart &= ~CFG_LPUART_MUX_MASK;
+	uart |= CFG_LPUART_EN;
+	QIXIS_WRITE(brdcfg[13], uart);
+#endif
+
 	return 0;
 }
 
@@ -137,128 +168,6 @@ void detail_board_ddr_info(void)
 }
 
 #ifdef CONFIG_OF_BOARD_SETUP
-
-/*
- * Hardware default stream IDs are 0x4000 + PCI function #, but that's outside
- * the acceptable range for SMMU.  Use Linux DT values instead or at least
- * smaller defaults.
- */
-#define ECAM_NUM_PFS			7
-#define ECAM_IERB_BASE			0x1F0800000
-#define ECAM_PFAMQ(pf, vf)		((ECAM_IERB_BASE + 0x800 + (pf) * \
-					  0x1000 + (vf) * 4))
-/* cache related transaction attributes for PCIe functions */
-#define ECAM_IERB_MSICAR		(ECAM_IERB_BASE + 0xa400)
-#define ECAM_IERB_MSICAR_VALUE		0x30
-
-/* number of VFs per PF, VFs have their own AMQ settings */
-static const u8 enetc_vfs[ECAM_NUM_PFS] = { 2, 2 };
-
-void setup_ecam_amq(void *blob)
-{
-	int streamid, sid_base, off;
-	int pf, vf, vfnn = 1;
-	u32 iommu_map[4];
-	int err;
-
-	/*
-	 * Look up the stream ID settings in the DT, if found apply the values
-	 * to HW, otherwise use HW values shifted down by 4.
-	 */
-	off = fdt_node_offset_by_compatible(blob, 0, "pci-host-ecam-generic");
-	if (off < 0) {
-		debug("ECAM node not found\n");
-		return;
-	}
-
-	err = fdtdec_get_int_array(blob, off, "iommu-map", iommu_map, 4);
-	if (err) {
-		sid_base = in_le32(ECAM_PFAMQ(0, 0)) >> 4;
-		debug("\"iommu-map\" not found, using default SID base %04x\n",
-		      sid_base);
-	} else {
-		sid_base = iommu_map[2];
-	}
-	/* set up AMQs for all integrated PCI functions */
-	for (pf = 0; pf < ECAM_NUM_PFS; pf++) {
-		streamid = sid_base + pf;
-		out_le32(ECAM_PFAMQ(pf, 0), streamid);
-
-		/* set up AMQs for VFs, if any */
-		for (vf = 0; vf < enetc_vfs[pf]; vf++, vfnn++) {
-			streamid = sid_base + ECAM_NUM_PFS + vfnn;
-			out_le32(ECAM_PFAMQ(pf, vf + 1), streamid);
-		}
-	}
-}
-
-void setup_ecam_cacheattr(void)
-{
-	/* set MSI cache attributes */
-	out_le32(ECAM_IERB_MSICAR, ECAM_IERB_MSICAR_VALUE);
-}
-
-#define IERB_PFMAC(pf, vf, n)		(ECAM_IERB_BASE + 0x8000 + (pf) * \
-					 0x100 + (vf) * 8 + (n) * 4)
-
-static int ierb_fno_to_pf[] = {0, 1, 2, -1, -1, -1, 3};
-
-/* ENETC Port MAC address registers, accepts big-endian format */
-static void ierb_set_mac_addr(int fno, const u8 *addr)
-{
-	u16 lower = *(const u16 *)(addr + 4);
-	u32 upper = *(const u32 *)addr;
-
-	if (ierb_fno_to_pf[fno] < 0)
-		return;
-
-	out_le32(IERB_PFMAC(ierb_fno_to_pf[fno], 0, 0), upper);
-	out_le32(IERB_PFMAC(ierb_fno_to_pf[fno], 0, 1), (u32)lower);
-}
-
-/* copies MAC addresses in use to IERB so Linux can also use them */
-void setup_mac_addr(void *blob)
-{
-	struct eth_pdata *plat;
-	struct udevice *it;
-	struct uclass *uc;
-	int fno, offset;
-	u32 portno;
-	char path[256];
-
-	uclass_get(UCLASS_ETH, &uc);
-	uclass_foreach_dev(it, uc) {
-		if (!it->driver || !it->driver->name)
-			continue;
-		if (!strcmp(it->driver->name, "enetc_eth")) {
-			/* PFs use the same addresses in Linux and U-Boot */
-			plat = dev_get_platdata(it);
-			if (!plat)
-				continue;
-
-			fno = PCI_FUNC(pci_get_devfn(it));
-			ierb_set_mac_addr(fno, plat->enetaddr);
-		} else if (!strcmp(it->driver->name, "felix-port")) {
-			/* Switch ports should also use the same addresses */
-			plat = dev_get_platdata(it);
-			if (!plat)
-				continue;
-			if (!ofnode_valid(it->node))
-				continue;
-			if (ofnode_read_u32(it->node, "reg", &portno))
-				continue;
-			sprintf(path,
-				"/soc/pcie@1f0000000/switch@0,5/ports/port@%d",
-				(int)portno);
-			offset = fdt_path_offset(blob, path);
-			if (offset < 0)
-				continue;
-			fdt_setprop(blob, offset, "mac-address",
-				    plat->enetaddr, 6);
-		}
-	}
-}
-
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	u64 base[CONFIG_NR_DRAM_BANKS];
@@ -285,10 +194,6 @@ int ft_board_setup(void *blob, bd_t *bd)
 	fdt_fixup_memory_banks(blob, base, size, 2);
 
 	fdt_fixup_icid(blob);
-
-	setup_ecam_amq(blob);
-	setup_ecam_cacheattr();
-	setup_mac_addr(blob);
 
 	return 0;
 }

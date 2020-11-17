@@ -21,8 +21,6 @@
 #define CONFIG_LOADCMD "fatload"
 #define CONFIG_RFSPART "2"
 
-#define CONFIG_SUPPORT_EMMC_BOOT
-
 #include "mx6_common.h"
 #include <linux/sizes.h>
 
@@ -34,8 +32,6 @@
 
 #define CONFIG_MXC_UART
 
-#define CONFIG_MXC_OCOTP
-
 /* SATA Configs */
 #define CONFIG_SYS_SATA_MAX_DEVICE	1
 #define CONFIG_DWC_AHSATA_PORT_ID	0
@@ -43,7 +39,6 @@
 #define CONFIG_LBA48
 
 /* MMC Configs */
-#define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR      0
 
 /* USB Configs */
@@ -217,7 +212,6 @@
 
 /* Framebuffer */
 #ifdef CONFIG_VIDEO
-#define CONFIG_VIDEO_IPUV3
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_SPLASH_SCREEN
 #define CONFIG_SPLASH_SCREEN_ALIGN
@@ -228,7 +222,6 @@
 #define CONFIG_IMX_VIDEO_SKIP
 #endif
 
-#define CONFIG_PWM_IMX
 #define CONFIG_IMX6_PWM_PER_CLK         66000000
 
 #ifdef CONFIG_CMD_PCI

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor
- * Copyright 2019 NXP
  */
 #include <common.h>
+#include <env.h>
 #include <malloc.h>
 #include <errno.h>
 #include <netdev.h>
@@ -13,13 +13,14 @@
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <fsl-mc/fsl_mc.h>
-#include <environment.h>
+#include <env_internal.h>
 #include <i2c.h>
 #include <rtc.h>
 #include <asm/arch/soc.h>
 #include <hwconfig.h>
 #include <fsl_sec.h>
 #include <asm/arch/ppa.h>
+#include <asm/arch-fsl-layerscape/fsl_icid.h>
 
 
 #include "../common/qixis.h"
@@ -161,15 +162,15 @@ unsigned long get_board_ddr_clk(void)
 int select_i2c_ch_pca9547(u8 ch)
 {
 	int ret;
-
-#ifndef CONFIG_DM_I2C
-	ret = i2c_write(I2C_MUX_PCA_ADDR_PRI, 0, 1, &ch, 1);
-#else
+#ifdef CONFIG_DM_I2C
 	struct udevice *dev;
 
 	ret = i2c_get_chip_for_busnum(0, I2C_MUX_PCA_ADDR_PRI, 1, &dev);
 	if (!ret)
 		ret = dm_i2c_write(dev, 0, &ch, 1);
+
+#else
+	ret = i2c_write(I2C_MUX_PCA_ADDR_PRI, 0, 1, &ch, 1);
 #endif
 	if (ret) {
 		puts("PCA: failed to select proper channel\n");
@@ -357,6 +358,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 #if defined(CONFIG_FSL_MC_ENET) && !defined(CONFIG_SPL_BUILD)
 	fdt_fixup_board_enet(blob);
 #endif
+
+	fdt_fixup_icid(blob);
 
 	return 0;
 }

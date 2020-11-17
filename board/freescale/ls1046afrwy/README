@@ -19,8 +19,8 @@ SoC overview.
       - Lane2: QSGMII
       - Lane3: Unused
  - SERDES2 Connections, 4 lanes supporting:
-	- Lane0: Unused
-	- Lane1: PCIe3 with PCIe x1 slot
+      - Lane0: Unused
+      - Lane1: PCIe3 with PCIe x1 slot
       - Lane2: Unused
       - Lane3: PCIe3 with PCIe x1 slot
  - DDR Controller

@@ -28,8 +28,6 @@
 #define CONFIG_SYS_I2C_SLAVE		0x0
 #define CONFIG_SYS_I2C_SPEED		100000
 
-/* SPI NOR flash default params, used by sf commands */
-
 /* Environment in SPI NOR flash */
 #define CONFIG_ENV_OFFSET		0x7E0000   /* RedBoot config partition in DTS */
 #define CONFIG_ENV_SIZE			(64 << 10) /* 64KiB */
@@ -80,7 +78,6 @@
 
 /* SPL */
 /* Defines for SPL */
-#define CONFIG_SPL_TEXT_BASE		0x40004030
 #define CONFIG_SPL_MAX_SIZE		((128 << 10) - 0x4030)
 
 #define CONFIG_SPL_BSS_START_ADDR	(0x40000000 + (128 << 10))
@@ -94,7 +91,6 @@
 #define CONFIG_SPL_BOOTROM_SAVE		(CONFIG_SPL_STACK + 4)
 
 /* SPL related SPI defines */
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x24000
 
 /* DS414 bus width is 32bits */
 #define CONFIG_DDR_32BIT
@@ -102,7 +98,5 @@
 /* Default Environment */
 #define CONFIG_BOOTCOMMAND	"sf read ${loadaddr} 0xd0000 0x700000; bootm"
 #define CONFIG_LOADADDR		0x80000
-#undef CONFIG_PREBOOT		/* override preboot for USB and SPI flash init */
-#define CONFIG_PREBOOT		"usb start; sf probe"
 
 #endif /* _CONFIG_SYNOLOGY_DS414_H */

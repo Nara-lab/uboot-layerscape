@@ -65,11 +65,10 @@
 
 # define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x600000
 # define DFU_DEFAULT_POLL_TIMEOUT	300
-# define CONFIG_USB_CABLE_CHECK
 # define CONFIG_THOR_RESET_OFF
 # define DFU_ALT_INFO_RAM \
 	"dfu_ram_info=" \
-	"set dfu_alt_info " \
+	"setenv dfu_alt_info " \
 	"${kernel_image} ram 0x3000000 0x500000\\\\;" \
 	"${devicetree_image} ram 0x2A00000 0x20000\\\\;" \
 	"${ramdisk_image} ram 0x2000000 0x600000\0" \
@@ -79,7 +78,7 @@
 # if defined(CONFIG_MMC_SDHCI_ZYNQ)
 #  define DFU_ALT_INFO_MMC \
 	"dfu_mmc_info=" \
-	"set dfu_alt_info " \
+	"setenv dfu_alt_info " \
 	"${kernel_image} fat 0 1\\\\;" \
 	"${devicetree_image} fat 0 1\\\\;" \
 	"${ramdisk_image} fat 0 1\0" \
@@ -103,7 +102,6 @@
 #define CONFIG_ENV_OVERWRITE
 
 /* enable preboot to be loaded before CONFIG_BOOTDELAY */
-#define CONFIG_PREBOOT
 
 /* Boot configuration */
 #define CONFIG_SYS_LOAD_ADDR		0 /* default? */
@@ -227,9 +225,9 @@
 				"env run importbootenv; " \
 			"fi; " \
 		"fi; \0" \
-	"sd_loadbootenv=set bootenv_dev mmc && " \
+	"sd_loadbootenv=setenv bootenv_dev mmc && " \
 			"run setbootenv \0" \
-	"usb_loadbootenv=set bootenv_dev usb && usb start && run setbootenv \0" \
+	"usb_loadbootenv=setenv bootenv_dev usb && usb start && run setbootenv \0" \
 	"preboot=if test $modeboot = sdboot; then " \
 			"run sd_loadbootenv; " \
 			"echo Checking if uenvcmd is set ...; " \
@@ -276,17 +274,10 @@
 /* Boot FreeBSD/vxWorks from an ELF image */
 #define CONFIG_SYS_MMC_MAX_DEVICE	1
 
-#define CONFIG_SYS_LDSCRIPT  "arch/arm/mach-zynq/u-boot.lds"
-
 /* MMC support */
 #ifdef CONFIG_MMC_SDHCI_ZYNQ
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION     1
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot.img"
-#endif
-
-/* Disable dcache for SPL just for sure */
-#ifdef CONFIG_SPL_BUILD
-#define CONFIG_SYS_DCACHE_OFF
 #endif
 
 /* Address in RAM where the parameters must be copied by SPL. */
@@ -302,7 +293,6 @@
 
 /* qspi mode is working fine */
 #ifdef CONFIG_ZYNQ_QSPI
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x100000
 #define CONFIG_SYS_SPI_ARGS_OFFS	0x200000
 #define CONFIG_SYS_SPI_ARGS_SIZE	0x80000
 #define CONFIG_SYS_SPI_KERNEL_OFFS	(CONFIG_SYS_SPI_ARGS_OFFS + \
@@ -310,7 +300,6 @@
 #endif
 
 /* SP location before relocation, must use scratch RAM */
-#define CONFIG_SPL_TEXT_BASE	0x0
 
 /* 3 * 64kB blocks of OCM - one is on the top because of bootrom */
 #define CONFIG_SPL_MAX_SIZE	0x30000

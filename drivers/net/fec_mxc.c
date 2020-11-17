@@ -9,7 +9,7 @@
 
 #include <common.h>
 #include <dm.h>
-#include <environment.h>
+#include <env.h>
 #include <malloc.h>
 #include <memalign.h>
 #include <miiphy.h>
@@ -604,7 +604,7 @@ static int fec_init(struct eth_device *dev, bd_t *bd)
 	writel(0x00000000, &fec->eth->gaddr2);
 
 	/* Do not access reserved register */
-	if (!is_mx6ul() && !is_mx6ull() && !is_imx8m()) {
+	if (!is_mx6ul() && !is_mx6ull() && !is_imx8() && !is_imx8m()) {
 		/* clear MIB RAM */
 		for (i = mib_ptr; i <= mib_ptr + 0xfc; i += 4)
 			writel(0, i);
@@ -1485,12 +1485,14 @@ static int fecmxc_ofdata_to_platdata(struct udevice *dev)
 }
 
 static const struct udevice_id fecmxc_ids[] = {
+	{ .compatible = "fsl,imx28-fec" },
 	{ .compatible = "fsl,imx6q-fec" },
 	{ .compatible = "fsl,imx6sl-fec" },
 	{ .compatible = "fsl,imx6sx-fec" },
 	{ .compatible = "fsl,imx6ul-fec" },
 	{ .compatible = "fsl,imx53-fec" },
 	{ .compatible = "fsl,imx7d-fec" },
+	{ .compatible = "fsl,mvf600-fec" },
 	{ }
 };
 

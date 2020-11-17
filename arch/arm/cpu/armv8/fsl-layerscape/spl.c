@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
+ * Copyright 2019 NXP
  */
 
 #include <common.h>
+#include <env.h>
 #include <spl.h>
 #include <asm/io.h>
 #include <fsl_ifc.h>
@@ -69,8 +71,10 @@ void board_init_f(ulong dummy)
 	preloader_console_init();
 	spl_set_bd();
 
+#ifdef CONFIG_SYS_I2C
 #ifdef CONFIG_SPL_I2C_SUPPORT
 	i2c_init_all();
+#endif
 #endif
 #ifdef CONFIG_VID
 	init_func_vid();

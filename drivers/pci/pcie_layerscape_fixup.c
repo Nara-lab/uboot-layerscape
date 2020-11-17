@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2019 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
  * Layerscape PCIe driver
  */
@@ -16,7 +16,9 @@
 #ifdef CONFIG_ARM
 #include <asm/arch/clock.h>
 #endif
+#include <asm/arch/soc.h>
 #include "pcie_layerscape.h"
+#include "pcie_layerscape_fixup_common.h"
 
 #if defined(CONFIG_FSL_LSCH3) || defined(CONFIG_FSL_LSCH2)
 /*
@@ -28,17 +30,6 @@ static int ls_pcie_next_lut_index(struct ls_pcie *pcie)
 		return pcie->next_lut_index++;
 	else
 		return -ENOSPC;  /* LUT is full */
-}
-
-/* returns the next available streamid for pcie, -errno if failed */
-static int ls_pcie_next_streamid(void)
-{
-	static int next_stream_id = FSL_PEX_STREAM_ID_START;
-
-	if (next_stream_id > FSL_PEX_STREAM_ID_END)
-		return -EINVAL;
-
-	return next_stream_id++;
 }
 
 static void lut_writel(struct ls_pcie *pcie, unsigned int value,
@@ -69,8 +60,8 @@ static void ls_pcie_lut_set_mapping(struct ls_pcie *pcie, int index, u32 devid,
  *      msi-map = <[devid] [phandle-to-msi-ctrl] [stream-id] [count]
  *                 [devid] [phandle-to-msi-ctrl] [stream-id] [count]>;
  */
-static void fdt_pcie_set_msi_map_entry(void *blob, struct ls_pcie *pcie,
-				       u32 devid, u32 streamid)
+static void fdt_pcie_set_msi_map_entry_ls(void *blob, struct ls_pcie *pcie,
+					  u32 devid, u32 streamid)
 {
 	u32 *prop;
 	u32 phandle;
@@ -83,7 +74,7 @@ static void fdt_pcie_set_msi_map_entry(void *blob, struct ls_pcie *pcie,
 						   pcie->dbi_res.start);
 	if (nodeoffset < 0) {
 #ifdef CONFIG_FSL_PCIE_COMPAT /* Compatible with older version of dts node */
-		svr = (get_svr() >> SVR_VAR_PER_SHIFT) & 0xFFFFFE;
+		svr = SVR_SOC_VER(get_svr());
 		if (svr == SVR_LS2088A || svr == SVR_LS2084A ||
 		    svr == SVR_LS2048A || svr == SVR_LS2044A ||
 		    svr == SVR_LS2081A || svr == SVR_LS2041A)
@@ -122,8 +113,8 @@ static void fdt_pcie_set_msi_map_entry(void *blob, struct ls_pcie *pcie,
  *      iommu-map = <[devid] [phandle-to-iommu-ctrl] [stream-id] [count]
  *                 [devid] [phandle-to-iommu-ctrl] [stream-id] [count]>;
  */
-static void fdt_pcie_set_iommu_map_entry(void *blob, struct ls_pcie *pcie,
-				       u32 devid, u32 streamid)
+static void fdt_pcie_set_iommu_map_entry_ls(void *blob, struct ls_pcie *pcie,
+					    u32 devid, u32 streamid)
 {
 	u32 *prop;
 	u32 iommu_map[4];
@@ -137,7 +128,7 @@ static void fdt_pcie_set_iommu_map_entry(void *blob, struct ls_pcie *pcie,
 						   pcie->dbi_res.start);
 	if (nodeoffset < 0) {
 #ifdef CONFIG_FSL_PCIE_COMPAT /* Compatible with older version of dts node */
-		svr = (get_svr() >> SVR_VAR_PER_SHIFT) & 0xFFFFFE;
+		svr = SVR_SOC_VER(get_svr());
 		if (svr == SVR_LS2088A || svr == SVR_LS2084A ||
 		    svr == SVR_LS2048A || svr == SVR_LS2044A ||
 		    svr == SVR_LS2081A || svr == SVR_LS2041A)
@@ -175,7 +166,7 @@ static void fdt_pcie_set_iommu_map_entry(void *blob, struct ls_pcie *pcie,
 	}
 }
 
-static void fdt_fixup_pcie(void *blob)
+static void fdt_fixup_pcie_ls(void *blob)
 {
 	struct udevice *dev, *bus;
 	struct ls_pcie *pcie;
@@ -191,10 +182,13 @@ static void fdt_fixup_pcie(void *blob)
 			bus = bus->parent;
 		pcie = dev_get_priv(bus);
 
-		streamid = ls_pcie_next_streamid();
+		streamid = pcie_next_streamid(pcie->stream_id_cur, pcie->idx);
+
 		if (streamid < 0) {
 			debug("ERROR: no stream ids free\n");
 			continue;
+		} else {
+			pcie->stream_id_cur++;
 		}
 
 		index = ls_pcie_next_lut_index(pcie);
@@ -209,32 +203,33 @@ static void fdt_fixup_pcie(void *blob)
 		ls_pcie_lut_set_mapping(pcie, index, bdf >> 8,
 					streamid);
 		/* update msi-map in device tree */
-		fdt_pcie_set_msi_map_entry(blob, pcie, bdf >> 8,
-					   streamid);
+		fdt_pcie_set_msi_map_entry_ls(blob, pcie, bdf >> 8,
+					      streamid);
 		/* update iommu-map in device tree */
-		fdt_pcie_set_iommu_map_entry(blob, pcie, bdf >> 8,
-					     streamid);
+		fdt_pcie_set_iommu_map_entry_ls(blob, pcie, bdf >> 8,
+						streamid);
 	}
+	pcie_board_fix_fdt(blob);
 }
 #endif
 
 static void ft_pcie_rc_fix(void *blob, struct ls_pcie *pcie)
 {
 	int off;
-	uint svr;
-	char *compat = NULL;
 
 	off = fdt_node_offset_by_compat_reg(blob, "fsl,ls-pcie",
 					    pcie->dbi_res.start);
 	if (off < 0) {
 #ifdef CONFIG_FSL_PCIE_COMPAT /* Compatible with older version of dts node */
-		svr = (get_svr() >> SVR_VAR_PER_SHIFT) & 0xFFFFFE;
+		char *compat = CONFIG_FSL_PCIE_COMPAT;
+#if defined(CONFIG_FSL_LAYERSCAPE)
+		uint svr = SVR_SOC_VER(get_svr());
+
 		if (svr == SVR_LS2088A || svr == SVR_LS2084A ||
 		    svr == SVR_LS2048A || svr == SVR_LS2044A ||
 		    svr == SVR_LS2081A || svr == SVR_LS2041A)
 			compat = "fsl,ls2088a-pcie";
-		else
-			compat = CONFIG_FSL_PCIE_COMPAT;
+#endif /* CONFIG_FSL_LAYERSCAPE */
 		if (compat)
 			off = fdt_node_offset_by_compat_reg(blob,
 					compat, pcie->dbi_res.start);
@@ -253,7 +248,7 @@ static void ft_pcie_ep_fix(void *blob, struct ls_pcie *pcie)
 {
 	int off;
 
-	off = fdt_node_offset_by_compat_reg(blob, "fsl,ls-pcie-ep",
+	off = fdt_node_offset_by_compat_reg(blob, CONFIG_FSL_PCIE_EP_COMPAT,
 					    pcie->dbi_res.start);
 	if (off < 0)
 		return;
@@ -271,7 +266,7 @@ static void ft_pcie_ls_setup(void *blob, struct ls_pcie *pcie)
 }
 
 /* Fixup Kernel DT for PCIe */
-void ft_pci_setup(void *blob, bd_t *bd)
+void ft_pci_setup_ls(void *blob, bd_t *bd)
 {
 	struct ls_pcie *pcie;
 
@@ -279,12 +274,12 @@ void ft_pci_setup(void *blob, bd_t *bd)
 		ft_pcie_ls_setup(blob, pcie);
 
 #if defined(CONFIG_FSL_LSCH3) || defined(CONFIG_FSL_LSCH2)
-	fdt_fixup_pcie(blob);
+	fdt_fixup_pcie_ls(blob);
 #endif
 }
 
 #else /* !CONFIG_OF_BOARD_SETUP */
-void ft_pci_setup(void *blob, bd_t *bd)
+void ft_pci_setup_ls(void *blob, bd_t *bd)
 {
 }
 #endif

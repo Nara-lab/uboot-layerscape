@@ -12,7 +12,7 @@
 #include <asm/arch/sys_proto.h>
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/mach-imx/mxc_i2c.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <linux/bitops.h>
 #include <miiphy.h>
 #include <netdev.h>
@@ -200,7 +200,10 @@ int board_init(void)
 
 int checkboard(void)
 {
-	puts("Board: PHYTEC phyCORE-i.MX6UL\n");
+	u32 cpurev = get_cpu_rev();
+
+	printf("Board: PHYTEC phyCORE-i.MX%s\n",
+	      get_imx_type((cpurev & 0xFF000) >> 12));
 
 	return 0;
 }

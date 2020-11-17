@@ -36,17 +36,17 @@
 
 &esdhc1 {
 	status = "okay";
+	mmc-hs200-1_8v;
 };
 
 &fspi {
-	bus-num = <0>;
 	status = "okay";
 
-	qflash0: flash@0 {
+	mt35xu02g0: flash@0 {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "spi-flash";
-		spi-max-frequency = <20000000>;
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <50000000>;
 		reg = <0>;
 	};
 };
@@ -129,7 +129,7 @@
 	phy-handle = <&rdb_phy0>;
 };
 
-&ethsw {
+&ethsw_ports {
 	port@0 {
 		status = "okay";
 		phy-mode = "qsgmii";

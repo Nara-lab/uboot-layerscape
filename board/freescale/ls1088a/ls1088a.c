@@ -3,6 +3,7 @@
  * Copyright 2017-2018 NXP
  */
 #include <common.h>
+#include <env.h>
 #include <i2c.h>
 #include <malloc.h>
 #include <errno.h>
@@ -14,7 +15,7 @@
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <fsl-mc/fsl_mc.h>
-#include <environment.h>
+#include <env_internal.h>
 #include <asm/arch-fsl-layerscape/soc.h>
 #include <asm/arch/ppa.h>
 #include <hwconfig.h>
@@ -913,7 +914,7 @@ void fsl_fdt_fixup_flash(void *fdt)
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	int i;
-	bool mc_memory_bank = false;
+	u16 mc_memory_bank = 0;
 
 	u64 *base;
 	u64 *size;
@@ -926,7 +927,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 	fdt_fixup_mc_ddr(&mc_memory_base, &mc_memory_size);
 
 	if (mc_memory_base != 0)
-		mc_memory_bank = true;
+		mc_memory_bank++;
 
 	total_memory_banks = CONFIG_NR_DRAM_BANKS + mc_memory_bank;
 

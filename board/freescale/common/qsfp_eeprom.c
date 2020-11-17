@@ -48,6 +48,9 @@ unsigned char get_qsfp_compat0(void)
 	char serial[20] = {0};
 	char pname[20] = {0};
 	char mfgdt[20] = {0};
+#ifdef CONFIG_DM_I2C
+	struct udevice *dev;
+#endif
 
 	memset(&qsfp, 0, sizeof(qsfp));
 #ifndef CONFIG_DM_I2C
@@ -57,10 +60,7 @@ unsigned char get_qsfp_compat0(void)
 		       (void *)&qsfp,
 		       sizeof(qsfp));
 #else
-	struct udevice *dev;
-
-	ret = i2c_get_chip_for_busnum(0, I2C_SFP_EEPROM_ADDR,
-				      I2C_SFP_EEPROM_ADDR_LEN, &dev);
+	ret = i2c_get_chip_for_busnum(0, I2C_SFP_EEPROM_ADDR, 1, &dev);
 	if (!ret)
 		ret = dm_i2c_read(dev, 0, (void *)&qsfp, sizeof(qsfp));
 #endif

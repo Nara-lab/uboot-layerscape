@@ -401,6 +401,7 @@ void fdt_fixup_remove_jr(void *blob)
 }
 #endif
 
+#ifdef CONFIG_ARCH_LS1028A
 static void fdt_disable_multimedia(void *blob, unsigned int svr)
 {
 	int off;
@@ -418,6 +419,13 @@ static void fdt_disable_multimedia(void *blob, unsigned int svr)
 	if (off != -FDT_ERR_NOTFOUND)
 		fdt_status_disabled(blob, off);
 }
+#endif
+
+#ifdef CONFIG_PCIE_ECAM_GENERIC
+__weak void fdt_fixup_ecam(void *blob)
+{
+}
+#endif
 
 void ft_cpu_setup(void *blob, bd_t *bd)
 {
@@ -482,5 +490,8 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 #endif
 #ifdef CONFIG_ARCH_LS1028A
 	fdt_disable_multimedia(blob, svr);
+#endif
+#ifdef CONFIG_PCIE_ECAM_GENERIC
+	fdt_fixup_ecam(blob);
 #endif
 }

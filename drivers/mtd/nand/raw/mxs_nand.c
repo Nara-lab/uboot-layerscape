@@ -25,7 +25,7 @@
 #include <asm/mach-imx/regs-bch.h>
 #include <asm/mach-imx/regs-gpmi.h>
 #include <asm/arch/sys_proto.h>
-#include "mxs_nand.h"
+#include <mxs_nand.h>
 
 #define	MXS_NAND_DMA_DESCRIPTOR_COUNT		4
 
@@ -50,7 +50,7 @@ struct nand_ecclayout fake_ecc_layout;
 /*
  * Cache management functions
  */
-#ifndef	CONFIG_SYS_DCACHE_OFF
+#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
 static void mxs_nand_flush_data_buf(struct mxs_nand_info *info)
 {
 	uint32_t addr = (uint32_t)info->data_buf;

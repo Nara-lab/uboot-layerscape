@@ -44,7 +44,6 @@
 
 /* MMC SPL */
 #define COPY_BL2_FNPTR_ADDR	0x02020030
-#define CONFIG_SUPPORT_EMMC_BOOT
 
 /* specific .lds file */
 
@@ -129,9 +128,9 @@
 #define EXYNOS_IRAM_SECONDARY_BASE	0x02020018
 
 #define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 2) \
 	func(MMC, mmc, 1) \
 	func(MMC, mmc, 0) \
-	func(MMC, mmc, 2) \
 	func(PXE, pxe, na) \
 	func(DHCP, dhcp, na)
 

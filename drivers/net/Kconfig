@@ -37,6 +37,19 @@ config DM_MDIO_MUX
 	  This is currently implemented in net/mdio-mux-uclass.c
 	  Look in include/miiphy.h for details.
 
+config DM_DSA
+	bool "Enable Driver Model for DSA switches"
+	depends on DM_ETH && DM_MDIO
+	help
+	  Enable Driver Model for DSA switches
+
+	  Adds UCLASS_DSA class supporting switches that follow the Distributed
+	  Switch Architecture (DSA).  These switches rely on the presence of a
+	  management switch port connected to an Ethernet controller capable of
+	  receiving frames from the switch.  This host Ethernet controller is
+	  called "master" and "cpu" in DSA terminology.
+	  This is currently implemented in net/dsa-uclass.c
+
 config MDIO_SANDBOX
 	depends on DM_MDIO && SANDBOX
 	default y
@@ -56,6 +69,14 @@ config MDIO_MUX_SANDBOX
 	  the MDIO bux.  It uses mdio_sandbox driver as parent MDIO.
 
 	  This driver is used for testing in test/dm/mdio.c
+
+config DSA_SANDBOX
+	depends on DM_DSA && SANDBOX
+	default y
+	bool "Sandbox: Mocked DSA driver"
+	help
+	  This driver implements a dummy switch and a dummy Ethernet device used
+	  to test DSA class code.
 
 menuconfig NETDEVICES
 	bool "Network device support"
@@ -197,7 +218,7 @@ config ETH_SANDBOX_RAW
 	  This driver is a bridge from the bottom of the network stack
 	  in U-Boot to the RAW AF_PACKET API in Linux. This allows real
 	  network traffic to be tested from within sandbox. See
-	  board/sandbox/README.sandbox for more details.
+	  doc/arch/index.rst for more details.
 
 config ETH_DESIGNWARE
 	bool "Synopsys Designware Ethernet MAC"
@@ -236,10 +257,16 @@ config FEC_MXC_MDIO_BASE
 
 config FEC_MXC
 	bool "FEC Ethernet controller"
-	depends on MX5 || MX6 || MX7 || IMX8
+	depends on MX28 || MX5 || MX6 || MX7 || IMX8 || VF610
 	help
 	  This driver supports the 10/100 Fast Ethernet controller for
 	  NXP i.MX processors.
+
+config FMAN_ENET
+	bool "Freescale FMan ethernet support"
+	depends on ARM || PPC
+	help
+	  This driver support the Freescale FMan Ethernet controller
 
 config FTMAC100
 	bool "Ftmac100 Ethernet Support"
@@ -315,7 +342,7 @@ config MACB_ZYNQ
 
 config MT7628_ETH
 	bool "MediaTek MT7628 Ethernet Interface"
-	depends on ARCH_MT7620
+	depends on SOC_MT7628
 	help
 	  The MediaTek MT7628 ethernet interface is used on MT7628 and
 	  MT7688 based boards.
@@ -574,6 +601,15 @@ config MEDIATEK_ETH
 	  This Driver support MediaTek Ethernet GMAC
 	  Say Y to enable support for the MediaTek Ethernet GMAC.
 
+config HIGMACV300_ETH
+	bool "HiSilicon Gigabit Ethernet Controller"
+	depends on DM_ETH
+	select DM_RESET
+	select PHYLIB
+	help
+	  This driver supports HIGMACV300 Ethernet controller found on
+	  HiSilicon SoCs.
+
 config FSL_ENETC
 	bool "NXP ENETC Ethernet controller"
 	depends on DM_PCI && DM_ETH && DM_MDIO
@@ -589,11 +625,14 @@ config MDIO_MUX_I2CREG
 	  an I2C chip.  The board it was developed for uses a mux controlled by
 	  on-board FPGA which in turn is accessed as a chip over I2C.
 
-config FSL_FELIX
-	bool "LS1028 Felix Ethernet switch"
-	depends on DM_PCI && DM_ETH && DM_MDIO
+config MVMDIO
+	bool "Marvell MDIO interface support"
+	depends on DM_MDIO
 	help
-	  This driver supports the Ethernet switch integrated in LS1028A NXP
-	  SoC.
+	  This driver supports the MDIO interface found in the network
+	  interface units of the Marvell EBU SoCs (Kirkwood, Orion5x,
+	  Dove, Armada 370, Armada XP, Armada 37xx and Armada7K/8K/8KP).
+
+	  This driver is used by the MVPP2 and MVNETA drivers.
 
 endif # NETDEVICES

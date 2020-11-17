@@ -187,7 +187,6 @@
 /* UBI support */
 
 /* Framebuffer */
-#define CONFIG_VIDEO_IPUV3
 /* check this console not needed, after test remove it */
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_SPLASH_SCREEN
@@ -197,7 +196,6 @@
 #define CONFIG_VIDEO_BMP_LOGO
 #define CONFIG_IMX_VIDEO_SKIP
 
-#define CONFIG_PWM_IMX
 #define CONFIG_IMX6_PWM_PER_CLK	66000000
 
 #endif /* __ARISTAINETOS_COMMON_CONFIG_H */

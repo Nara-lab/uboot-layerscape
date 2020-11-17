@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
+ * Copyright 2019 NXP
  * Author: Hongbo Zhang <hongbo.zhang@nxp.com>
  * This file implements LS102X platform PSCI SYSTEM-SUSPEND function
  */

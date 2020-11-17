@@ -8,11 +8,11 @@
 
 #ifdef FTRACE
 #define CONFIG_TRACE
+#define CONFIG_CMD_TRACE
 #define CONFIG_TRACE_BUFFER_SIZE	(16 << 20)
-#define CONFIG_TRACE_EARLY_SIZE		(8 << 20)
+#define CONFIG_TRACE_EARLY_SIZE		(16 << 20)
 #define CONFIG_TRACE_EARLY
 #define CONFIG_TRACE_EARLY_ADDR		0x00100000
-
 #endif
 
 #ifndef CONFIG_SPL_BUILD
@@ -63,7 +63,11 @@
 	func(HOST, host, 1) \
 	func(HOST, host, 0)
 
+#ifdef __ASSEMBLY__
+#define BOOTENV
+#else
 #include <config_distro_bootcmd.h>
+#endif
 
 #define CONFIG_KEEP_SERVERADDR
 #define CONFIG_UDP_CHECKSUM
@@ -71,7 +75,6 @@
 #define CONFIG_BOOTP_DNS2
 #define CONFIG_BOOTP_SEND_HOSTNAME
 #define CONFIG_BOOTP_SERVERIP
-#define CONFIG_IP_DEFRAG
 
 #ifndef SANDBOX_NO_SDL
 #define CONFIG_SANDBOX_SDL
@@ -99,6 +102,10 @@
 					"eth1addr=00:00:11:22:33:45\0" \
 					"eth3addr=00:00:11:22:33:46\0" \
 					"eth5addr=00:00:11:22:33:47\0" \
+					"eth8addr=00:00:11:22:33:48\0" \
+					"eth9addr=00:00:11:22:33:49\0" \
+					"eth10addr=00:00:11:22:33:4a\0" \
+					"eth11addr=00:00:11:22:33:4b\0" \
 					"ipaddr=1.2.3.4\0"
 
 #define MEM_LAYOUT_ENV_SETTINGS \

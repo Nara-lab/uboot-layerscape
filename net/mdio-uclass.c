@@ -10,6 +10,17 @@
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 
+/* DT node properties for MAC-PHY interface */
+#define PHY_MODE_STR_CNT	2
+static const char *phy_mode_str[PHY_MODE_STR_CNT] = { "phy-mode",
+						      "phy-connection-type" };
+/* DT node properties that reference a PHY node */
+#define PHY_HANDLE_STR_CNT	3
+const char *phy_handle_str[PHY_HANDLE_STR_CNT] = { "phy-handle",
+						   "phy",
+						   "phy-device" };
+
+
 void dm_mdio_probe_devices(void)
 {
 	struct udevice *it;
@@ -23,6 +34,17 @@ void dm_mdio_probe_devices(void)
 
 static int dm_mdio_post_bind(struct udevice *dev)
 {
+	const char *dt_name;
+
+	/* set a custom name for the MDIO device, if present in DT */
+	if (ofnode_valid(dev->node)) {
+		dt_name = ofnode_read_string(dev->node, "device-name");
+		if (dt_name) {
+			debug("renaming dev %s to %s\n", dev->name, dt_name);
+			device_set_name(dev, dt_name);
+		}
+	}
+
 	/*
 	 * MDIO command doesn't like spaces in names, don't allow them to keep
 	 * it happy
@@ -75,7 +97,7 @@ static int dm_mdio_post_probe(struct udevice *dev)
 	pdata->mii_bus->write = mdio_write;
 	pdata->mii_bus->reset = mdio_reset;
 	pdata->mii_bus->priv = dev;
-	strncpy(pdata->mii_bus->name, dev->name, MDIO_NAME_LEN);
+	strncpy(pdata->mii_bus->name, dev->name, MDIO_NAME_LEN - 1);
 
 	return mdio_register(pdata->mii_bus);
 }
@@ -93,132 +115,94 @@ static int dm_mdio_pre_remove(struct udevice *dev)
 	return 0;
 }
 
-struct phy_device *dm_mdio_phy_connect(struct udevice *dev, int addr,
+struct phy_device *dm_mdio_phy_connect(struct udevice *mdiodev, int phyaddr,
 				       struct udevice *ethdev,
 				       phy_interface_t interface)
 {
-	struct mdio_perdev_priv *pdata = dev_get_uclass_priv(dev);
+	struct mdio_perdev_priv *pdata = dev_get_uclass_priv(mdiodev);
 
-	if (device_probe(dev))
-		return 0;
+	if (device_probe(mdiodev))
+		return NULL;
 
-	return phy_connect(pdata->mii_bus, addr, ethdev, interface);
+	return phy_connect(pdata->mii_bus, phyaddr, ethdev, interface);
 }
 
-static struct phy_device *dm_eth_connect_phy_handle(struct udevice *dev,
-						    phy_interface_t if_type)
+static struct phy_device *dm_eth_connect_phy_handle(struct udevice *ethdev,
+						    phy_interface_t interface)
 {
-	u32 phy_phandle, phy_addr;
-	struct udevice *mdio_dev;
+	u32 phy_addr;
+	struct udevice *mdiodev;
 	struct phy_device *phy;
-	ofnode phy_node;
+	struct ofnode_phandle_args phandle = {.node = ofnode_null()};
+	int i;
 
-	if (ofnode_read_u32(dev->node, "phy-handle", &phy_phandle)) {
-		dev_dbg(dev, "phy-handle missing in ethernet node\n");
+	for (i = 0; i < PHY_HANDLE_STR_CNT; i++)
+		if (!dev_read_phandle_with_args(ethdev, phy_handle_str[i], NULL,
+						0, 0, &phandle))
+			break;
+
+	if (!ofnode_valid(phandle.node)) {
+		dev_dbg(dev, "can't find PHY node\n");
 		return NULL;
 	}
 
-	phy_node = ofnode_get_by_phandle(phy_phandle);
-	if (!ofnode_valid(phy_node)) {
-		dev_dbg(dev, "invalid phy node\n");
-		return NULL;
-	}
-
-	if (ofnode_read_u32(phy_node, "reg", &phy_addr)) {
-		dev_dbg(dev, "missing reg property in phy node\n");
+	/*
+	 * reading 'reg' directly should be fine.  This is a PHY node, the
+	 * address is always size 1 and requires no translation
+	 */
+	if (ofnode_read_u32(phandle.node, "reg", &phy_addr)) {
+		dev_dbg(ethdev, "missing reg property in phy node\n");
 		return NULL;
 	}
 
 	if (uclass_get_device_by_ofnode(UCLASS_MDIO,
-					ofnode_get_parent(phy_node),
-					&mdio_dev)) {
+					ofnode_get_parent(phandle.node),
+					&mdiodev)) {
 		dev_dbg(dev, "can't find MDIO bus for node %s\n",
-			ofnode_get_name(ofnode_get_parent(phy_node)));
+			ofnode_get_name(ofnode_get_parent(phandle.node)));
 		return NULL;
 	}
 
-	phy = dm_mdio_phy_connect(mdio_dev, phy_addr, dev, if_type);
-	phy->node = phy_node;
+	phy = dm_mdio_phy_connect(mdiodev, phy_addr, ethdev, interface);
 
-	return phy;
-}
-
-static struct phy_device *dm_eth_connect_mdio_handle(struct udevice *dev,
-						     phy_interface_t if_type)
-{
-	u32 mdio_phandle;
-	ofnode mdio_node;
-	struct udevice *mdio_dev;
-	struct phy_device *phy;
-	uint mask = (uint)-1;
-	struct mdio_perdev_priv *pdata;
-
-	if (ofnode_read_u32(dev->node, "mdio-handle", &mdio_phandle)) {
-		dev_dbg(dev, "mdio-handle missing in ethernet node\n");
-		return NULL;
-	}
-
-	mdio_node = ofnode_get_by_phandle(mdio_phandle);
-	if (!ofnode_valid(mdio_node)) {
-		dev_dbg(dev, "invalid mdio node\n");
-		return NULL;
-	}
-
-	if (uclass_get_device_by_ofnode(UCLASS_MDIO, mdio_node, &mdio_dev)) {
-		dev_dbg(dev, "can't find MDIO bus for node %s\n",
-			ofnode_get_name(mdio_node));
-		return NULL;
-	}
-	pdata = dev_get_uclass_priv(mdio_dev);
-
-	phy = phy_find_by_mask(pdata->mii_bus, mask, if_type);
 	if (phy)
-		phy_connect_dev(phy, dev);
-	else
-		dev_dbg(dev, "no PHY detected on bus\n");
+		phy->node = phandle.node;
 
 	return phy;
 }
 
 /* Connect to a PHY linked in eth DT node */
-struct phy_device *dm_eth_phy_connect(struct udevice *dev)
+struct phy_device *dm_eth_phy_connect(struct udevice *ethdev)
 {
-	const char *if_type_str;
-	phy_interface_t if_type;
+	const char *if_str;
+	phy_interface_t interface;
 	struct phy_device *phy;
+	int i;
 
-	if (!ofnode_valid(dev->node)) {
-		debug("%s: supplied eth dev has no DT node!\n", dev->name);
+	if (!ofnode_valid(ethdev->node)) {
+		debug("%s: supplied eth dev has no DT node!\n", ethdev->name);
 		return NULL;
 	}
 
-	/*
-	 * The sequence should be as follows:
-	 * - if there is a phy-handle property, follow that,
-	 * - if there is a mdio-handle property, follow that and scan for the
-	 *   PHY,
-	 * - if the above came out empty, just return NULL.
-	 */
+	interface = PHY_INTERFACE_MODE_NONE;
+	for (i = 0; i < PHY_MODE_STR_CNT; i++) {
+		if_str = ofnode_read_string(ethdev->node, phy_mode_str[i]);
+		if (if_str) {
+			interface = phy_get_interface_by_name(if_str);
+			break;
+		}
+	}
+	if (interface < 0)
+		interface = PHY_INTERFACE_MODE_NONE;
+	if (interface == PHY_INTERFACE_MODE_NONE)
+		dev_dbg(ethdev, "can't find interface mode, default to NONE\n");
 
-	if_type = PHY_INTERFACE_MODE_NONE;
-	if_type_str = ofnode_read_string(dev->node, "phy-mode");
-	if (if_type_str)
-		if_type = phy_get_interface_by_name(if_type_str);
-	if (if_type < 0)
-		if_type = PHY_INTERFACE_MODE_NONE;
-
-	if (if_type == PHY_INTERFACE_MODE_NONE)
-		dev_dbg(dev, "can't find interface mode, default to NONE\n");
-
-	phy = dm_eth_connect_phy_handle(dev, if_type);
-
-	if (!phy)
-		phy = dm_eth_connect_mdio_handle(dev, if_type);
+	phy = dm_eth_connect_phy_handle(ethdev, interface);
 
 	if (!phy)
 		return NULL;
 
-	phy->interface = if_type;
+	phy->interface = interface;
 
 	return phy;
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2019 NXP.
+ * Copyright 2019 NXP
  */
 #include <common.h>
 #include <asm/io.h>
@@ -52,6 +52,8 @@ int board_eth_init(bd_t *bis)
 	fm_info_set_mdio(FM1_DTSEC5, dev);
 	fm_info_set_mdio(FM1_DTSEC10, dev);
 	fm_info_set_mdio(FM1_DTSEC1, dev);
+
+	fm_disable_port(FM1_DTSEC9);
 
 	cpu_eth_init(bis);
 #endif

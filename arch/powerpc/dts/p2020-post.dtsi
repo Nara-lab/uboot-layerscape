@@ -13,12 +13,6 @@
 	compatible = "fsl,p2020-immr", "simple-bus";
 	bus-frequency = <0x0>;
 
-	usb@22000 {
-		compatible = "fsl-usb2-dr";
-		reg = <0x22000 0x1000>;
-		phy_type = "ulpi";
-	};
-
 	mpic: pic@40000 {
 		interrupt-controller;
 		#address-cells = <0>;
@@ -36,15 +30,6 @@
 		reg = <0x2e000 0x1000>;
 		/* Filled in by U-Boot */
 		clock-frequency = <0>;
-	};
-
-	espi0: spi@7000 {
-		compatible = "fsl,mpc8536-espi";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x7000 0x1000>;
-		fsl,espi-num-chipselects = <4>;
-		status = "disabled";
 	};
 };
 

@@ -21,8 +21,8 @@
  *
  * Tweak the SPL text base address to avoid this.
  */
-#undef CONFIG_SPL_TEXT_BASE
-#define CONFIG_SPL_TEXT_BASE            0x00909000
+
+#define CONFIG_SYS_FSL_USDHC_NUM	1
 
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(16 * SZ_1M)
@@ -31,7 +31,6 @@
 #define CONFIG_MXC_UART_BASE		UART1_BASE
 
 /* MMC Configs */
-#define CONFIG_FSL_USDHC
 
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC1_BASE_ADDR
 

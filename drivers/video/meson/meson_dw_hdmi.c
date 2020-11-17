@@ -361,13 +361,22 @@ static int meson_dw_hdmi_probe(struct udevice *dev)
 	priv->hdmi.i2c_clk_high = 0x67;
 	priv->hdmi.i2c_clk_low = 0x78;
 
+#if CONFIG_IS_ENABLED(DM_REGULATOR)
 	ret = device_get_supply_regulator(dev, "hdmi-supply", &supply);
-	if (ret)
+	if (ret && ret != -ENOENT) {
+		pr_err("Failed to get HDMI regulator\n");
 		return ret;
+	}
 
-	ret = regulator_set_enable(supply, true);
-	if (ret)
-		return ret;
+	if (!ret) {
+		ret = regulator_set_enable(supply, true);
+		if (ret)
+			return ret;
+	}
+#endif
+
+	uclass_get_device_by_phandle(UCLASS_I2C, dev, "ddc-i2c-bus",
+				     &priv->hdmi.ddc_bus);
 
 	ret = reset_get_bulk(dev, &resets);
 	if (ret)
@@ -420,9 +429,16 @@ static int meson_dw_hdmi_probe(struct udevice *dev)
 	return ret;
 }
 
+static bool meson_dw_hdmi_mode_valid(struct udevice *dev,
+				     const struct display_timing *timing)
+{
+	return meson_venc_hdmi_supported_mode(timing);
+}
+
 static const struct dm_display_ops meson_dw_hdmi_ops = {
 	.read_edid = meson_dw_hdmi_read_edid,
 	.enable = meson_dw_hdmi_enable,
+	.mode_valid = meson_dw_hdmi_mode_valid,
 };
 
 static const struct udevice_id meson_dw_hdmi_ids[] = {

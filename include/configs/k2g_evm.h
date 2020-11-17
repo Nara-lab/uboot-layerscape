@@ -69,11 +69,8 @@
 	"run run_mon_hs; "						\
 	"run init_${boot}; "						\
 	"run get_fit_${boot}; "						\
-	"bootm ${fit_loadaddr}#${name_fdt}"
+	"bootm ${addr_fit}#${name_fdt}"
 #endif
-
-/* SPL SPI Loader Configuration */
-#define CONFIG_SPL_TEXT_BASE		0x0c0a0000
 
 /* NAND Configuration */
 #define CONFIG_SYS_NAND_PAGE_2K

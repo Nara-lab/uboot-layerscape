@@ -69,6 +69,25 @@
 			voltage-ranges = <1800 1800 3300 3300>;
 		};
 
+		usb0: usb@210000 {
+			compatible = "fsl-usb2-mph";
+			reg = <0x210000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			interrupts = <44 0x2 0 0>;
+			phy_type = "utmi";
+		};
+
+		usb1: usb@211000 {
+			compatible = "fsl-usb2-dr";
+			reg = <0x211000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			interrupts = <45 0x2 0 0>;
+			dr_mode = "host";
+			phy_type = "utmi";
+		};
+
 		sata: sata@220000 {
 			compatible = "fsl,pq-sata-v2";
 			reg = <0x220000 0x1000>;
@@ -76,28 +95,6 @@
 			sata-offset = <0x1000>;
 			sata-number = <2>;
 			sata-fpdma = <0>;
-		};
-
-		usb@210000 {
-			compatible = "fsl-usb2-mph";
-			reg = <0x210000 0x1000>;
-			phy_type = "utmi";
-		};
-
-		usb@211000 {
-			compatible = "fsl-usb2-dr";
-			reg = <0x211000 0x1000>;
-			phy_type = "utmi";
-		};
-
-		espi0: spi@110000 {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			compatible = "fsl,mpc8536-espi";
-			reg = <0x110000 0x1000>;
-			interrupts = <53 0x2 0 0>;
-			fsl,espi-num-chipselects = <4>;
-			status = "disabled";
 		};
 	};
 

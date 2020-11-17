@@ -4,6 +4,7 @@
  * Copyright 2017-2018 NXP
  */
 #include <common.h>
+#include <env.h>
 #include <errno.h>
 #include <linux/bug.h>
 #include <asm/io.h>
@@ -93,7 +94,6 @@ void dump_mc_ccsr_regs(struct mc_ccsr_registers __iomem *mc_ccsr_regs)
 
 #endif /* DEBUG */
 
-#ifndef CONFIG_SYS_LS_MC_FW_IN_DDR
 /**
  * Copying MC firmware or DPL image to DDR
  */
@@ -106,6 +106,7 @@ static int mc_copy_image(const char *title,
 	return 0;
 }
 
+#ifndef CONFIG_SYS_LS_MC_FW_IN_DDR
 /**
  * MC firmware FIT image parser checks if the image is in FIT
  * format, verifies integrity of the image and calculates

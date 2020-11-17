@@ -113,7 +113,8 @@ unsigned int cm_get_qspi_controller_clk_hz(void);
 	"scriptaddr=0x02100000\0" \
 	"scriptfile=u-boot.scr\0" \
 	"fatscript=if fatload mmc 0:1 ${scriptaddr} ${scriptfile};" \
-		   "then source ${scriptaddr}; fi\0"
+		   "then source ${scriptaddr}; fi\0" \
+	"socfpga_legacy_reset_compat=1\0"
 
 /*
  * Generic Interrupt Controller Definitions
@@ -128,11 +129,6 @@ unsigned int cm_get_qspi_controller_clk_hz(void);
 #define CONFIG_SYS_SDRAM_BASE		0
 #define CONFIG_SYS_MEMTEST_START	0
 #define CONFIG_SYS_MEMTEST_END		PHYS_SDRAM_1_SIZE - 0x200000
-
-/*
- * SDRAM controller
- */
-#define CONFIG_ALTERA_SDRAM
 
 /*
  * Serial / UART configurations
@@ -197,7 +193,6 @@ unsigned int cm_get_l4_sys_free_clk_hz(void);
  *
  */
 #define CONFIG_SPL_TARGET		"spl/u-boot-spl.hex"
-#define CONFIG_SPL_TEXT_BASE		CONFIG_SYS_INIT_RAM_ADDR
 #define CONFIG_SPL_MAX_SIZE		CONFIG_SYS_INIT_RAM_SIZE
 #define CONFIG_SPL_STACK		CONFIG_SYS_INIT_SP_ADDR
 #define CONFIG_SPL_BSS_MAX_SIZE		0x100000	/* 1 MB */
@@ -206,7 +201,6 @@ unsigned int cm_get_l4_sys_free_clk_hz(void);
 #define CONFIG_SYS_SPL_MALLOC_SIZE	(CONFIG_SYS_MALLOC_LEN)
 #define CONFIG_SYS_SPL_MALLOC_START	(CONFIG_SPL_BSS_START_ADDR \
 					- CONFIG_SYS_SPL_MALLOC_SIZE)
-#define CONFIG_SYS_SPI_U_BOOT_OFFS      0x3C00000
 
 /* SPL SDMMC boot support */
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION	1

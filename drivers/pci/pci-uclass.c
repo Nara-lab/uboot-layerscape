@@ -677,6 +677,11 @@ static int pci_find_and_bind_driver(struct udevice *parent,
 	/* Determine optional OF node */
 	pci_dev_find_ofnode(parent, bdf, &node);
 
+	if (ofnode_valid(node) && !ofnode_is_available(node)) {
+		debug("%s: Ignoring disabled device\n", __func__);
+		return -EPERM;
+	}
+
 	start = ll_entry_start(struct pci_driver_entry, pci_driver_entry);
 	n_ents = ll_entry_count(struct pci_driver_entry, pci_driver_entry);
 	for (entry = start; entry != start + n_ents; entry++) {
@@ -918,6 +923,11 @@ static void decode_regions(struct pci_controller *hose, ofnode parent_node,
 		return;
 
 	for (i = 0; i < CONFIG_NR_DRAM_BANKS; ++i) {
+		if (hose->region_count == MAX_PCI_REGIONS) {
+			pr_err("maximum number of regions parsed, aborting\n");
+			break;
+		}
+
 		if (bd->bi_dram[i].size) {
 			pci_set_region(hose->regions + hose->region_count++,
 				       bd->bi_dram[i].start,
@@ -1567,9 +1577,9 @@ void pci_init(void)
 	 * Enumerate all known controller devices. Enumeration has the side-
 	 * effect of probing them, so PCIe devices will be enumerated too.
 	 */
-	for (uclass_first_device(UCLASS_PCI, &bus);
+	for (uclass_first_device_check(UCLASS_PCI, &bus);
 	     bus;
-	     uclass_next_device(&bus)) {
+	     uclass_next_device_check(&bus)) {
 		;
 	}
 }

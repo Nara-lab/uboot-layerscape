@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2019 NXP
- * Copyright 2007-2012 Freescale Semiconductor, Inc.
  *
  * PCIe DM U-Boot driver for Freescale PowerPC SoCs
  * Author: Hou Zhiqiang <Zhiqiang.Hou@nxp.com>
@@ -43,12 +42,6 @@
 #define PEX_CSR0_LTSSM_SHIFT		2
 #define LTSSM_L0_REV3			0x11
 #define LTSSM_L0			0x16
-
-#ifdef ARCH_P4080
-#define P4080_SERDES_ADDR		CONFIG_SYS_FSL_CORENET_SERDES_ADDR
-#else
-#define P4080_SERDES_ADDR		0
-#endif
 
 struct fsl_pcie_data {
 	u32 block_offset;		/* Offset from CCSR of 1st controller */

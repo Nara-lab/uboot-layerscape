@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  */
 
 #include <common.h>
@@ -16,7 +16,7 @@
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <fsl-mc/fsl_mc.h>
-#include <environment.h>
+#include <env_internal.h>
 #include <efi_loader.h>
 #include <asm/arch/mmu.h>
 #include <hwconfig.h>
@@ -27,11 +27,14 @@
 #include "../common/qixis.h"
 #include "../common/vid.h"
 #include <fsl_immap.h>
+#include <asm/arch-fsl-layerscape/fsl_icid.h>
+#include <asm/gic-v3.h>
 
 #ifdef CONFIG_EMC2305
 #include "../common/emc2305.h"
 #endif
 
+#define GIC_LPI_SIZE                             0x200000
 #ifdef CONFIG_TARGET_LX2160AQDS
 #define CFG_MUX_I2C_SDHC(reg, value)		((reg & 0x3f) | value)
 #define SET_CFG_MUX1_SDHC1_SDHC(reg)		(reg & 0x3f)
@@ -96,6 +99,7 @@ int select_i2c_ch_pca9547(u8 ch)
 int select_i2c_ch_pca9547_sec(u8 ch)
 {
 	int ret;
+
 #ifndef CONFIG_DM_I2C
 	ret = i2c_write(I2C_MUX_PCA_ADDR_SEC, 0, 1, &ch, 1);
 #else
@@ -141,9 +145,8 @@ int board_early_init_f(void)
 #ifdef CONFIG_OF_BOARD_FIXUP
 int board_fix_fdt(void *fdt)
 {
-	char *reg_name, *old_str, *new_str;
-	const char *reg_names;
-	int names_len, old_str_len, new_str_len, remaining_str_len;
+	char *reg_names, *reg_name;
+	int names_len, old_name_len, new_name_len, remaining_names_len;
 	struct str_map {
 		char *old_str;
 		char *new_str;
@@ -151,7 +154,7 @@ int board_fix_fdt(void *fdt)
 		{ "ccsr", "dbi" },
 		{ "pf_ctrl", "ctrl" }
 	};
-	int off = -1, i;
+	int off = -1, i = 0;
 
 	if (IS_SVR_REV(get_svr(), 1, 0))
 		return 0;
@@ -161,39 +164,41 @@ int board_fix_fdt(void *fdt)
 		fdt_setprop(fdt, off, "compatible", "fsl,ls-pcie",
 			    strlen("fsl,ls-pcie") + 1);
 
-		reg_names = fdt_getprop(fdt, off, "reg-names", &names_len);
+		reg_names = (char *)fdt_getprop(fdt, off, "reg-names",
+						&names_len);
 		if (!reg_names)
 			continue;
 
-		reg_name = (char *)reg_names;
-		remaining_str_len = names_len - (reg_name - reg_names);
+		reg_name = reg_names;
+		remaining_names_len = names_len - (reg_name - reg_names);
 		i = 0;
-		while ((i < ARRAY_SIZE(reg_names_map)) && remaining_str_len) {
-			old_str = reg_names_map[i].old_str;
-			new_str = reg_names_map[i].new_str;
-			old_str_len = strlen(old_str);
-			new_str_len = strlen(new_str);
-			if (memcmp(reg_name, old_str, old_str_len) == 0) {
+		while ((i < ARRAY_SIZE(reg_names_map)) && remaining_names_len) {
+			old_name_len = strlen(reg_names_map[i].old_str);
+			new_name_len = strlen(reg_names_map[i].new_str);
+			if (memcmp(reg_name, reg_names_map[i].old_str,
+				   old_name_len) == 0) {
 				/* first only leave required bytes for new_str
 				 * and copy rest of the string after it
 				 */
-				memcpy(reg_name + new_str_len,
-				       reg_name + old_str_len,
-				       remaining_str_len - old_str_len);
+				memcpy(reg_name + new_name_len,
+				       reg_name + old_name_len,
+				       remaining_names_len - old_name_len);
 				/* Now copy new_str */
-				memcpy(reg_name, new_str, new_str_len);
-				names_len -= old_str_len;
-				names_len += new_str_len;
+				memcpy(reg_name, reg_names_map[i].new_str,
+				       new_name_len);
+				names_len -= old_name_len;
+				names_len += new_name_len;
 				i++;
 			}
 
-			reg_name = memchr(reg_name, '\0', remaining_str_len);
+			reg_name = memchr(reg_name, '\0', remaining_names_len);
 			if (!reg_name)
 				break;
 
 			reg_name += 1;
 
-			remaining_str_len = names_len - (reg_name - reg_names);
+			remaining_names_len = names_len -
+					      (reg_name - reg_names);
 		}
 
 		fdt_setprop(fdt, off, "reg-names", reg_names, names_len);
@@ -210,9 +215,9 @@ void esdhc_dspi_status_fixup(void *blob)
 {
 	const char esdhc0_path[] = "/soc/esdhc@2140000";
 	const char esdhc1_path[] = "/soc/esdhc@2150000";
-	const char dspi0_path[] = "/soc/dspi@2100000";
-	const char dspi1_path[] = "/soc/dspi@2110000";
-	const char dspi2_path[] = "/soc/dspi@2120000";
+	const char dspi0_path[] = "/soc/spi@2100000";
+	const char dspi1_path[] = "/soc/spi@2110000";
+	const char dspi2_path[] = "/soc/spi@2120000";
 
 	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
 	u32 sdhc1_base_pmux;
@@ -262,10 +267,12 @@ void esdhc_dspi_status_fixup(void *blob)
 		& FSL_CHASSIS3_IIC5_PMUX_MASK;
 	iic5_pmux >>= FSL_CHASSIS3_IIC5_PMUX_SHIFT;
 
-	if (iic5_pmux == IIC5_PMUX_SPI3) {
+	if (iic5_pmux == IIC5_PMUX_SPI3)
 		do_fixup_by_path(blob, dspi2_path, "status", "okay",
 				 sizeof("okay"), 1);
-	}
+	else
+		do_fixup_by_path(blob, dspi2_path, "status", "disabled",
+				 sizeof("disabled"), 1);
 }
 #endif
 
@@ -290,7 +297,14 @@ int i2c_multiplexer_select_vid_channel(u8 channel)
 
 int init_func_vid(void)
 {
-	if (adjust_vdd(0) < 0)
+	int set_vid;
+
+	if (IS_SVR_REV(get_svr(), 1, 0))
+		set_vid = adjust_vdd(800);
+	else
+		set_vid = adjust_vdd(0);
+
+	if (set_vid < 0)
 		printf("core voltage not adjusted\n");
 
 	return 0;
@@ -322,6 +336,8 @@ int checkboard(void)
 
 	if (src == BOOT_SOURCE_SD_MMC) {
 		puts("SD\n");
+	} else if (src == BOOT_SOURCE_SD_MMC2) {
+		puts("eMMC\n");
 	} else {
 		sw = QIXIS_READ(brdcfg[0]);
 		sw = (sw >> QIXIS_XMAP_SHIFT) & QIXIS_XMAP_MASK;
@@ -641,25 +657,40 @@ void board_quiesce_devices(void)
 }
 #endif
 
-#ifdef CONFIG_OF_BOARD_SETUP
+#ifdef CONFIG_GIC_V3_ITS
+void fdt_fixup_gic_lpi_memory(void *blob, u64 gic_lpi_base)
+{
+	u32 phandle;
+	int err;
+	struct fdt_memory gic_lpi;
 
+	gic_lpi.start = gic_lpi_base;
+	gic_lpi.end = gic_lpi_base + GIC_LPI_SIZE - 1;
+	err = fdtdec_add_reserved_memory(blob, "gic-lpi", &gic_lpi, &phandle);
+	if (err < 0)
+		debug("failed to add reserved memory: %d\n", err);
+}
+#endif
+
+#ifdef CONFIG_OF_BOARD_SETUP
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	int i;
-	bool mc_memory_bank = false;
+	u16 mc_memory_bank = 0;
 
 	u64 *base;
 	u64 *size;
 	u64 mc_memory_base = 0;
 	u64 mc_memory_size = 0;
 	u16 total_memory_banks;
+	u64 gic_lpi_base;
 
 	ft_cpu_setup(blob, bd);
 
 	fdt_fixup_mc_ddr(&mc_memory_base, &mc_memory_size);
 
 	if (mc_memory_base != 0)
-		mc_memory_bank = true;
+		mc_memory_bank++;
 
 	total_memory_banks = CONFIG_NR_DRAM_BANKS + mc_memory_bank;
 
@@ -671,6 +702,12 @@ int ft_board_setup(void *blob, bd_t *bd)
 		base[i] = gd->bd->bi_dram[i].start;
 		size[i] = gd->bd->bi_dram[i].size;
 	}
+
+#ifdef CONFIG_GIC_V3_ITS
+	gic_lpi_base = gd->arch.resv_ram - GIC_LPI_SIZE;
+	gic_lpi_tables_init(gic_lpi_base, cpu_numcores());
+	fdt_fixup_gic_lpi_memory(blob, gic_lpi_base);
+#endif
 
 #ifdef CONFIG_RESV_RAM
 	/* reduce size if reserved memory is within this bank */
@@ -705,6 +742,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 	fdt_fsl_mc_fixup_iommu_map_entry(blob);
 	fdt_fixup_board_enet(blob);
 #endif
+	fdt_fixup_icid(blob);
 
 	return 0;
 }

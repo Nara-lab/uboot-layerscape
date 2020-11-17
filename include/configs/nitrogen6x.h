@@ -58,7 +58,6 @@
 #define CONFIG_MXC_USB_FLAGS	0
 
 /* Framebuffer and LCD */
-#define CONFIG_VIDEO_IPUV3
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_SPLASH_SCREEN
 #define CONFIG_SPLASH_SCREEN_ALIGN
@@ -67,8 +66,6 @@
 #define CONFIG_BMP_16BPP
 #define CONFIG_IMX_HDMI
 #define CONFIG_IMX_VIDEO_SKIP
-
-#define CONFIG_PREBOOT                 ""
 
 #ifdef CONFIG_CMD_MMC
 #define DISTRO_BOOT_DEV_MMC(func) func(MMC, mmc, 0) func(MMC, mmc, 1)

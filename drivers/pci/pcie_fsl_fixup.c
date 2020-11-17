@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+ OR X11
 /*
  * Copyright 2019 NXP
- * Copyright 2007-2012 Freescale Semiconductor, Inc.
  *
  * PCIe Kernel DT fixup of DM U-Boot driver for Freescale PowerPC SoCs
  * Author: Hou Zhiqiang <Zhiqiang.Hou@nxp.com>

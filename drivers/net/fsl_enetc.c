@@ -122,16 +122,34 @@ static int enetc_init_rgmii(struct udevice *dev)
 	return 0;
 }
 
-/* set up MAC and serdes for SXGMII */
-static int enetc_init_sxgmii(struct udevice *dev)
+/* set up MAC configuration for the given interface type */
+static void enetc_setup_mac_iface(struct udevice *dev)
 {
 	struct enetc_priv *priv = dev_get_priv(dev);
 	u32 if_mode;
 
-	/* set ifmode to (US)XGMII */
-	if_mode = enetc_read_port(priv, ENETC_PM_IF_MODE);
-	if_mode &= ~ENETC_PM_IF_IFMODE_MASK;
-	enetc_write_port(priv, ENETC_PM_IF_MODE, if_mode);
+	switch (priv->if_type) {
+	case PHY_INTERFACE_MODE_RGMII:
+	case PHY_INTERFACE_MODE_RGMII_ID:
+	case PHY_INTERFACE_MODE_RGMII_RXID:
+	case PHY_INTERFACE_MODE_RGMII_TXID:
+		enetc_init_rgmii(dev);
+		break;
+	case PHY_INTERFACE_MODE_XGMII:
+	case PHY_INTERFACE_MODE_USXGMII:
+	case PHY_INTERFACE_MODE_XFI:
+		/* set ifmode to (US)XGMII */
+		if_mode = enetc_read_port(priv, ENETC_PM_IF_MODE);
+		if_mode &= ~ENETC_PM_IF_IFMODE_MASK;
+		enetc_write_port(priv, ENETC_PM_IF_MODE, if_mode);
+		break;
+	};
+}
+
+/* set up serdes for SXGMII */
+static int enetc_init_sxgmii(struct udevice *dev)
+{
+	struct enetc_priv *priv = dev_get_priv(dev);
 
 	if (!enetc_has_imdio(dev))
 		return 0;
@@ -156,19 +174,14 @@ static void enetc_start_pcs(struct udevice *dev)
 
 	priv->if_type = PHY_INTERFACE_MODE_NONE;
 
-	/* check internal mdio capability, not all ports need it */
+	/* register internal MDIO for debug purposes */
 	if (enetc_read_port(priv, ENETC_PCAPR0) & ENETC_PCAPRO_MDIO) {
-		/*
-		 * set up internal MDIO, this is part of ETH PCI function and is
-		 * used to access serdes / internal SoC PHYs.
-		 * We don't currently register it as a MDIO bus as it goes away
-		 * when the interface is removed, so it can't practically be
-		 * used in the console.
-		 */
 		priv->imdio.read = enetc_mdio_read;
 		priv->imdio.write = enetc_mdio_write;
 		priv->imdio.priv = priv->port_regs + ENETC_PM_IMDIO_BASE;
 		strncpy(priv->imdio.name, dev->name, MDIO_NAME_LEN);
+		if (!miiphy_get_dev_by_name(priv->imdio.name))
+			mdio_register(&priv->imdio);
 	}
 
 	if (!ofnode_valid(dev->node)) {
@@ -272,14 +285,57 @@ static int enetc_remove(struct udevice *dev)
 	return 0;
 }
 
-/* ENETC Port MAC address registers, accepts big-endian format */
-static void enetc_set_primary_mac_addr(struct enetc_priv *priv, const u8 *addr)
+/*
+ * LS1028A is the only part with IERB at this time and there are plans to
+ * change its structure, keep this LS1028A specific for now.
+ */
+#define LS1028A_IERB_BASE		0x1f0800000ULL
+#define LS1028A_IERB_PSIPMAR0(pf, vf)	(LS1028A_IERB_BASE + 0x8000 \
+					 + (pf) * 0x100 + (vf) * 8)
+#define LS1028A_IERB_PSIPMAR1(pf, vf)	(LS1028A_IERB_PSIPMAR0(pf, vf) + 4)
+
+static int enetc_ls1028a_write_hwaddr(struct udevice *dev)
 {
+	struct pci_child_platdata *ppdata = dev_get_parent_platdata(dev);
+	const int devfn_to_pf[] = {0, 1, 2, -1, -1, -1, 3};
+	struct eth_pdata *plat = dev_get_platdata(dev);
+	int devfn = PCI_FUNC(ppdata->devfn);
+	u8 *addr = plat->enetaddr;
+	u32 lower, upper;
+	int pf;
+
+	if (devfn >= ARRAY_SIZE(devfn_to_pf))
+		return 0;
+
+	pf = devfn_to_pf[devfn];
+	if (pf < 0)
+		return 0;
+
+	lower = *(const u16 *)(addr + 4);
+	upper = *(const u32 *)addr;
+
+	out_le32(LS1028A_IERB_PSIPMAR0(pf, 0), upper);
+	out_le32(LS1028A_IERB_PSIPMAR1(pf, 0), lower);
+
+	return 0;
+}
+
+static int enetc_write_hwaddr(struct udevice *dev)
+{
+	struct eth_pdata *plat = dev_get_platdata(dev);
+	struct enetc_priv *priv = dev_get_priv(dev);
+	u8 *addr = plat->enetaddr;
+
+	if (IS_ENABLED(CONFIG_ARCH_LS1028A))
+		return enetc_ls1028a_write_hwaddr(dev);
+
 	u16 lower = *(const u16 *)(addr + 4);
 	u32 upper = *(const u32 *)addr;
 
 	enetc_write_port(priv, ENETC_PSIPMAR0, upper);
 	enetc_write_port(priv, ENETC_PSIPMAR1, lower);
+
+	return 0;
 }
 
 /* Configure port parameters (# of rings, frame size, enable port) */
@@ -410,7 +466,6 @@ static void enetc_setup_rx_bdr(struct udevice *dev)
  */
 static int enetc_start(struct udevice *dev)
 {
-	struct eth_pdata *plat = dev_get_platdata(dev);
 	struct enetc_priv *priv = dev_get_priv(dev);
 
 	/* reset and enable the PCI device */
@@ -418,23 +473,13 @@ static int enetc_start(struct udevice *dev)
 	dm_pci_clrset_config16(dev, PCI_COMMAND, 0,
 			       PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
 
-	if (!is_valid_ethaddr(plat->enetaddr)) {
-		enetc_dbg(dev, "invalid MAC address, generate random ...\n");
-		net_random_ethaddr(plat->enetaddr);
-	}
-	enetc_set_primary_mac_addr(priv, plat->enetaddr);
-
 	enetc_enable_si_port(priv);
 
 	/* setup Tx/Rx buffer descriptors */
 	enetc_setup_tx_bdr(dev);
 	enetc_setup_rx_bdr(dev);
 
-	if (priv->if_type == PHY_INTERFACE_MODE_RGMII ||
-	    priv->if_type == PHY_INTERFACE_MODE_RGMII_ID ||
-	    priv->if_type == PHY_INTERFACE_MODE_RGMII_RXID ||
-	    priv->if_type == PHY_INTERFACE_MODE_RGMII_TXID)
-		enetc_init_rgmii(dev);
+	enetc_setup_mac_iface(dev);
 
 	if (priv->phy)
 		phy_startup(priv->phy);
@@ -451,6 +496,10 @@ static void enetc_stop(struct udevice *dev)
 {
 	/* FLR is sufficient to quiesce the device */
 	dm_pci_flr(dev);
+	/* leave the BARs accessible after we stop, this is needed to use
+	 * internal MDIO in command line.
+	 */
+	dm_pci_clrset_config16(dev, PCI_COMMAND, 0, PCI_COMMAND_MEMORY);
 }
 
 /*
@@ -549,6 +598,7 @@ static const struct eth_ops enetc_ops = {
 	.send	= enetc_send,
 	.recv	= enetc_recv,
 	.stop	= enetc_stop,
+	.write_hwaddr = enetc_write_hwaddr,
 };
 
 U_BOOT_DRIVER(eth_enetc) = {
