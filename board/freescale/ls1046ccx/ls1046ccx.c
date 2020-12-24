@@ -55,6 +55,7 @@ int pld_enable_reset_req(void)
 {
 	int err;
 	u32 rstrqsr1, rstrqmr1;
+	u8 banka_value;
 
 	struct ccsr_gur *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
 	rstrqmr1 = in_be32(&gur->rstrqmr1);
@@ -76,12 +77,6 @@ int pld_enable_reset_req(void)
 		return err;
 	}
 
-	i2c_reg_write(0x20, 0x05, 0xff);
-	if (i2c_reg_read(0x20, 0x05) != 0xff) {
-		printf("Failed to enable pull-ups on bank a.\n");
-		return err;
-	}
-
 	i2c_reg_write(0x20, 0x23, 0x0a);
 	if (i2c_reg_read(0x20, 0x23) != 0x0a) {
 		printf("Failed to set PLD mode on bank a.\n");
@@ -91,6 +86,29 @@ int pld_enable_reset_req(void)
 	i2c_reg_write(0x20, 0x21, 0x01);
 	if (i2c_reg_read(0x20, 0x21) != 0x01) {
 		printf("Failed to enable PLD on bank a.\n");
+		return err;
+	}
+
+	i2c_reg_write(0x20, 0x03, 0x00);
+	if (i2c_reg_read(0x20, 0x03) != 0x00) {
+		printf("Failed to set direction of bank a.\n");
+		return err;
+	}
+
+	i2c_reg_write(0x20, 0x01, 0xf0);
+	banka_value = (i2c_reg_read(0x20, 0x01) & 0xf0);
+	if (banka_value == 0xe0) {
+		/* First revision, no resets */
+		printf("Mainboard: Revision < D\n");
+		i2c_reg_write(0x20, 0x03, 0xf0);
+		if (i2c_reg_read(0x20, 0x03) != 0xf0) {
+			printf("Failed to re-set direction of bank a.\n");
+			return err;
+		}
+	} else if (banka_value == 0xf0) {
+		printf("Mainboard: Revision >= D\n");
+	} else {
+		printf("Failed to value of bank a.\n");
 		return err;
 	}
 
